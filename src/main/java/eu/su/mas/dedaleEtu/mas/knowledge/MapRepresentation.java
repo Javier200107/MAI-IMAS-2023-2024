@@ -69,9 +69,9 @@ public class MapRepresentation implements Serializable {
 		this.g= new SingleGraph("My world vision");
 		this.g.setAttribute("ui.stylesheet",nodeStyle);
 
-		Platform.runLater(() -> {
+		/*Platform.runLater(() -> {
 			openGui();
-		});
+		});*/
 		//this.viewer = this.g.display();
 
 		this.nbEdges=0;
