@@ -320,15 +320,16 @@ public class Principal {
 		// Object [] entityParameters={"My parameters"};
 		//
 		// //4) Give the class name of your agent to let the system instantiate it
-		// ag=createNewDedaleAgent(c, agentName, ControlledAgent.class.getName(),
-		// entityParameters);
+		// ag=createNewDedaleAgent(c, agentName, ControlledAgent.class.getName(), entityParameters);
 		// agentList.add(ag);
 
 		c = containerList.get(ConfigurationFile.LOCAL_CONTAINER2_NAME);
 		Assert.assertNotNull("This container does not exist", c);
 
 		// Set communicationRange for all agents
-		Object[] entityParameters = { "My parameters" };
+		// TODO: Should entityParameters have all agents (collectors and explorers)
+		// TODO: Should entityParameters don't contain youself?
+		Object[] entityParameters = { "Explo1", "Explo2", "Explo3" };
 		// Object[] entityParameters = { ConfigurationFile.DEFAULT_COMMUNICATION_REACH };
 
 		agentName = "Explo1";
