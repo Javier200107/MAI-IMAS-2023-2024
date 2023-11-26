@@ -44,8 +44,8 @@ public class InformTankerBehaviour extends TickerBehaviour{
 			msg.setContent("Info about " + this.myAgent.getLocalName()+";"+((AbstractDedaleAgent)this.myAgent).getMyTreasureType()+";"
 								+((AbstractDedaleAgent)this.myAgent).getClass()+";"+((AbstractDedaleAgent)this.myAgent).getBackPackFreeSpace());//.get(0).getRight());
 
-			msg.addReceiver(new AID("Tank1",AID.ISLOCALNAME));
-			msg.addReceiver(new AID("Tank2",AID.ISLOCALNAME));
+			msg.addReceiver(new AID("Tanker1",AID.ISLOCALNAME));
+			msg.addReceiver(new AID("Tanker2",AID.ISLOCALNAME));
 
 			//Mandatory to use this method (it takes into account the environment to decide if someone is reachable or not)
 			((AbstractDedaleAgent)this.myAgent).send(msg);
