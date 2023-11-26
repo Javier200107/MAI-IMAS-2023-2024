@@ -343,19 +343,19 @@ public class Principal {
 		Assert.assertNotNull("This container does not exist",c);
 
 		//2) Give the name of your agent, MUST be the same as the one given in the entities file.
-		agentName="Explo1";
+		// agentName="Explo1";
 
 		//3) If you want to give specific parameters to your agent, add them here
 		Object [] entityParameters={"My parameters"};
 
-		//4) Give the class name of your agent to let the system instantiate it
-		ag = createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParameters);
-		//		ag=createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParametersExplo1);//ExploreSoloAgent
-		agentList.add(ag);
+		// //4) Give the class name of your agent to let the system instantiate it
+		// ag = createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParameters);
+		// //		ag=createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParametersExplo1);//ExploreSoloAgent
+		// agentList.add(ag);
 
-		agentName ="Explo2";
-		ag = createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParameters);
-		agentList.add(ag);
+		// agentName ="Explo2";
+		// ag = createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParameters);
+		// agentList.add(ag);
 
 		agentName ="Collect1";
 		ag = createNewDedaleAgent(c, agentName, DummyCollectorAgent.class.getName(), entityParameters);

@@ -5,6 +5,7 @@ import eu.su.mas.dedale.env.Location;
 import eu.su.mas.dedale.env.Observation;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedale.mas.agent.behaviours.platformManagment.*;
+import eu.su.mas.dedaleEtu.mas.behaviours.InformTankerBehaviour;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,7 +45,8 @@ public class DummyCollectorAgent extends AbstractDedaleAgent{
 		super.setup();
 
 		List<Behaviour> lb=new ArrayList<Behaviour>();
-		lb.add(new RandomWalkExchangeBehaviour(this));
+		lb.add(new InformTankerBehaviour(this));
+		// lb.add(new RandomWalkExchangeBehaviour(this));
 
 		addBehaviour(new startMyBehaviours(this,lb));
 
@@ -139,9 +141,9 @@ public class DummyCollectorAgent extends AbstractDedaleAgent{
 				}
 
 				//Trying to store everything in the tanker
-				System.out.println(this.myAgent.getLocalName()+" - My current backpack capacity is:"+ ((AbstractDedaleAgent)this.myAgent).getBackPackFreeSpace());
-				System.out.println(this.myAgent.getLocalName()+" - The agent tries to transfer is load into the Silo (if reachable); succes ? : "+((AbstractDedaleAgent)this.myAgent).emptyMyBackPack("Tank"));
-				System.out.println(this.myAgent.getLocalName()+" - My current backpack capacity is:"+ ((AbstractDedaleAgent)this.myAgent).getBackPackFreeSpace());
+				// System.out.println(this.myAgent.getLocalName()+" - My current backpack capacity is:"+ ((AbstractDedaleAgent)this.myAgent).getBackPackFreeSpace());
+				// System.out.println(this.myAgent.getLocalName()+" - The agent tries to transfer is load into the Silo (if reachable); succes ? : "+((AbstractDedaleAgent)this.myAgent).emptyMyBackPack("Tank"));
+				// System.out.println(this.myAgent.getLocalName()+" - My current backpack capacity is:"+ ((AbstractDedaleAgent)this.myAgent).getBackPackFreeSpace());
 
 				//Random move from the current position
 				Random r= new Random();

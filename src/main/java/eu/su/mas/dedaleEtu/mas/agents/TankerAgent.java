@@ -12,9 +12,13 @@ import eu.su.mas.dedale.env.Observation;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedale.mas.agent.behaviours.ReceiveTreasureTankerBehaviour;
 import eu.su.mas.dedale.mas.agent.behaviours.platformManagment.*;
+import eu.su.mas.dedaleEtu.mas.behaviours.RandomWalkBehaviour;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.TickerBehaviour;
 
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 
 /**
  * Dummy Tanker agent. It does nothing more than printing what it observes every 10s and receiving the treasures from other agents. 
@@ -45,8 +49,8 @@ public class TankerAgent extends AbstractDedaleAgent{
 		super.setup();
 
 		List<Behaviour> lb=new ArrayList<Behaviour>();
-		lb.add(new RandomTankerBehaviour(this));
-		
+		lb.add(new TankerBehaviour(this));
+
 		addBehaviour(new startMyBehaviours(this,lb));
 		
 		System.out.println("the  agent "+this.getLocalName()+ " is started");
@@ -70,15 +74,15 @@ public class TankerAgent extends AbstractDedaleAgent{
  * 
  **************************************/
 
-class RandomTankerBehaviour extends TickerBehaviour{
+class TankerBehaviour extends TickerBehaviour{
 	/**
 	 * When an agent choose to migrate all its components should be serializable
 	 *  
 	 */
 	private static final long serialVersionUID = 9088209402507795289L;
 
-	public RandomTankerBehaviour (final AbstractDedaleAgent myagent) {
-		super(myagent, 10000);
+	public TankerBehaviour (final AbstractDedaleAgent myagent) {
+		super(myagent, 3000);
 	}
 
 	@Override
@@ -92,7 +96,22 @@ class RandomTankerBehaviour extends TickerBehaviour{
 			System.out.println(this.myAgent.getLocalName()+" -- list of observables: "+lobs);
 		
 		}
+	
+		// At each time step, the agent receives information about status of other agents
+		// and the treasure they have collected
+
+		// 1) receive the message
+		// Dont filter the message, receive everything
+		MessageTemplate msgTemplate=MessageTemplate.and(
+				MessageTemplate.MatchProtocol("INFORM-TANKERS"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+		ACLMessage msg=this.myAgent.receive(msgTemplate);
+		// Print the message
+		// System.out.println("Try to receive");
+		if (msg != null) {
+			System.out.println(this.myAgent.getLocalName()+" -- received message: "+msg.getContent());
+		}
 
 	}
-
 }
+
