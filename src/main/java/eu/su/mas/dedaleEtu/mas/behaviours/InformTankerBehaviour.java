@@ -7,6 +7,8 @@ import jade.core.Agent;
 import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 
+import java.util.Objects;
+
 /**
  * This example behaviour try to send a hello message (every 3s maximum) to agents Collect2 Collect1
  * @author hc
@@ -26,7 +28,6 @@ public class InformTankerBehaviour extends TickerBehaviour{
 	 */
 	public InformTankerBehaviour (final Agent myagent) {
 		super(myagent, 600);
-		//super(myagent);
 	}
 
 	@Override
@@ -39,7 +40,7 @@ public class InformTankerBehaviour extends TickerBehaviour{
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setSender(this.myAgent.getAID());
 		msg.setProtocol("INFORM-TANKERS");	
-		if (myPosition!=null && myPosition.getLocationId()!=""){
+		if (myPosition!=null && !Objects.equals(myPosition.getLocationId(), "")){
 			// System.out.println(this.myAgent.getLocalName() + " is sending info to Tankers");
 			msg.setContent("Info about " + this.myAgent.getLocalName()+";"+((AbstractDedaleAgent)this.myAgent).getMyTreasureType()+";"
 								+((AbstractDedaleAgent)this.myAgent).getClass()+";"+((AbstractDedaleAgent)this.myAgent).getBackPackFreeSpace());//.get(0).getRight());
