@@ -6,9 +6,9 @@ import java.util.List;
 
 import eu.su.mas.dedaleEtu.mas.agents.dummies.DummyCollectorAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.DummyMovingAgent;
-import eu.su.mas.dedaleEtu.mas.agents.dummies.DummyTankerAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.explo.ExploreCoopAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.explo.ExploreSoloAgent;
+import eu.su.mas.dedaleEtu.mas.agents.TankerAgent;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedale.mas.agents.GateKeeperAgent;
 import eu.su.mas.dedale.mas.agents.dedaleDummyAgents.DummyWumpusShift;
@@ -321,6 +321,15 @@ public class Principal {
 		agentName ="Collect1";
 		ag = createNewDedaleAgent(c, agentName, DummyCollectorAgent.class.getName(), entityParameters);
 		agentList.add(ag);
+
+		agentName ="Tank1";
+		ag = createNewDedaleAgent(c, agentName, TankerAgent.class.getName(), entityParameters);
+		agentList.add(ag);
+
+		agentName ="Tank2";
+		ag = createNewDedaleAgent(c, agentName, TankerAgent.class.getName(), entityParameters);
+		agentList.add(ag);
+
 
 		/*********************
 		 * All agents created
