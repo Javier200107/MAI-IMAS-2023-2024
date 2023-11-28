@@ -16,9 +16,13 @@ public class TankerBehaviour extends TickerBehaviour {
      * When an agent choose to migrate all its components should be serializable
      */
     private static final long serialVersionUID = 9088209402507795289L;
+    private final AbstractDedaleAgent agent;
+    private final String agentName;
 
     public TankerBehaviour(final AbstractDedaleAgent myagent) {
-        super(myagent, 3000);
+        super(myagent, 600);
+        this.agent = (AbstractDedaleAgent) this.myAgent;
+        this.agentName = this.agent.getLocalName();
     }
 
     @Override
@@ -28,8 +32,9 @@ public class TankerBehaviour extends TickerBehaviour {
 
         if (myPosition != null) {
             //List of observable from the agent's current position
-            List<Couple<Location, List<Couple<Observation, Integer>>>> lobs = ((AbstractDedaleAgent) this.myAgent).observe();//myPosition
-            System.out.println(this.myAgent.getLocalName() + " -- list of observables: " + lobs);
+            List<Couple<Location, List<Couple<Observation, Integer>>>> lobs = agent.observe();//myPosition
+            System.out.println(agentName + " -- list of observables: " + lobs);
+            System.out.println(agentName + " -- My current backpack capacity is:"+ agent.getBackPackFreeSpace());
 
         }
 
@@ -41,11 +46,11 @@ public class TankerBehaviour extends TickerBehaviour {
         MessageTemplate msgTemplate = MessageTemplate.and(
                 MessageTemplate.MatchProtocol("INFORM-TANKERS"),
                 MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-        ACLMessage msg = this.myAgent.receive(msgTemplate);
+        ACLMessage msg = agent.receive(msgTemplate);
         // Print the message
         // System.out.println("Try to receive");
         if (msg != null) {
-            System.out.println(this.myAgent.getLocalName() + " -- received message: " + msg.getContent());
+            System.out.println(agentName + " -- received message: " + msg.getContent());
         }
 
     }

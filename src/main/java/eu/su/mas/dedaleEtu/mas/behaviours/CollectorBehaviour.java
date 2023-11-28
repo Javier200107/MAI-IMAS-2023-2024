@@ -12,19 +12,21 @@ import java.util.Random;
 
 public class CollectorBehaviour extends TickerBehaviour {
     private Location current_position;
+    private final AbstractDedaleAgent agent;
+    private final String agentName;
 
     public CollectorBehaviour(Agent a) {
         super(a, 600);
-        this.current_position = ((AbstractDedaleAgent) this.myAgent).getCurrentPosition();
+        this.agent = (AbstractDedaleAgent) this.myAgent;
+        this.agentName = this.agent.getLocalName();
+        this.current_position = this.agent.getCurrentPosition();
     }
 
     @Override
     protected void onTick() {
+        this.current_position = agent.getCurrentPosition();
 
-        this.current_position = ((AbstractDedaleAgent) this.myAgent).getCurrentPosition();
         if (this.current_position != null && !this.current_position.getLocationId().isEmpty()){
-            String agentName = this.myAgent.getLocalName();
-            AbstractDedaleAgent agent = (AbstractDedaleAgent) this.myAgent;
 
             System.out.println(agentName + " -- my current position is: " + this.current_position);
             System.out.println(agentName + " - My treasure type is : "+ agent.getMyTreasureType());
@@ -35,22 +37,14 @@ public class CollectorBehaviour extends TickerBehaviour {
 
             //List of observations associated to the currentPosition
             List<Couple<Observation,Integer>> lCurrentObservations= lobs.get(0).getRight();
-
+            //TODO: check what happens if lock already unlocked
+            int pickedQuantity = 0;
             for(Couple<Observation, Integer> o:lCurrentObservations){
-                System.out.println("o " + o);
                 Observation treasureType = o.getLeft();
-                int pickedQuantity = 0;
                 switch (treasureType) {
                     case DIAMOND:case GOLD:
-                        boolean open = false;
-                        // Right now, the agent only opens the lock if the treasure type is the same as its own
-                        if (treasureType == agent.getMyTreasureType()) {
-                            // TODO: check value of open if it is already open
-                            open = agent.openLock(treasureType);
-                            System.out.println(" - I try to open the safe: "+ open);
-                        }else{
-                            System.out.println(" - I don't open the safe because the treasure type is not the same as mine");
-                        }
+                        boolean open = agent.openLock(treasureType);
+                        System.out.println(" - I try to open the safe: "+ open);
                         System.out.println(agentName + " - Value of the treasure on the current position: "+treasureType +": "+ o.getRight());
 
                         if (open) {
@@ -61,19 +55,25 @@ public class CollectorBehaviour extends TickerBehaviour {
                     default:
                         break;
                 }
-                if (pickedQuantity > 0) {
-                    System.out.println(agentName + " - The agent grabbed :"+ pickedQuantity);
-                    System.out.println(agentName + " - the remaining backpack capacity is: "+ agent.getBackPackFreeSpace());
-                    List<Couple<Location,List<Couple<Observation,Integer>>>> lobs2 = agent.observe();
-                    System.out.println("State of the observations after picking " + lobs2);
-                }
-                //Random move from the current position
-                Random r= new Random();
-                int moveId=1+r.nextInt(lobs.size()-1);//removing the current position from the list of target to accelerate the tests, but not necessary as to stay is an action
-
-                //The move action (if any) should be the last action of your behaviour
-                agent.moveTo(lobs.get(moveId).getLeft());
             }
+            if (pickedQuantity > 0) {
+                System.out.println(agentName + " - The agent grabbed :"+ pickedQuantity);
+                System.out.println(agentName + " - the remaining backpack capacity is: "+ agent.getBackPackFreeSpace());
+                // List<Couple<Location,List<Couple<Observation,Integer>>>> lobs2 = agent.observe();
+                // System.out.println("State of the observations after picking " + lobs2);
+
+                // Try to store picked treasure in the tankers
+                System.out.println(agentName + " - The agent tries to transfer its load to Tanker1 (if reachable); success ? : "+ agent.emptyMyBackPack("Tanker1"));
+                System.out.println(agentName + " - The agent tries to transfer its load to Tanker2 (if reachable); success ? : "+ agent.emptyMyBackPack("Tanker2"));
+                System.out.println(agentName + " - The agent tries to transfer its load to Tanker3 (if reachable); success ? : "+ agent.emptyMyBackPack("Tanker3"));
+                System.out.println(agentName + " - My current backpack capacity is:"+ agent.getBackPackFreeSpace());
+            }
+            //Random move from the current position
+            Random r= new Random();
+            int moveId=1+r.nextInt(lobs.size()-1);//removing the current position from the list of target to accelerate the tests, but not necessary as to stay is an action
+
+            //The move action (if any) should be the last action of your behaviour
+            agent.moveTo(lobs.get(moveId).getLeft());
         }
     }
 }
