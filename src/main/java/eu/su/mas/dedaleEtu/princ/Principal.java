@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import eu.su.mas.dedaleEtu.mas.agents.CollectorAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.DummyCollectorAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.DummyMovingAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.explo.ExploreCoopAgent;
@@ -345,19 +346,19 @@ public class Principal {
 		agentList.add(ag);
 
 		agentName = "Collect1";
-		ag = createNewDedaleAgent(c, agentName, DummyCollectorAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Collect2";
-		ag = createNewDedaleAgent(c, agentName, DummyCollectorAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Collect3";
-		ag = createNewDedaleAgent(c, agentName, DummyCollectorAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Collect4";
-		ag = createNewDedaleAgent(c, agentName, DummyCollectorAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Tanker1";

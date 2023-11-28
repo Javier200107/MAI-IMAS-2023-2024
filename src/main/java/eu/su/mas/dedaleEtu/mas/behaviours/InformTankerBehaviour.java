@@ -34,7 +34,7 @@ public class InformTankerBehaviour extends TickerBehaviour{
 	public void onTick() {
 		Location myPosition=((AbstractDedaleAgent)this.myAgent).getCurrentPosition();
 
-		//A message is defined by : a performative, a sender, a set of receivers, (a protocol),(a content (and/or contentOBject))
+		//A message is defined by : a performative, a sender, a set of receivers, (a protocol),(a content (and/or contentObject))
 		// ACLMessage msg=new ACLMessage(ACLMessage.INFORM);
 		
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
@@ -49,7 +49,7 @@ public class InformTankerBehaviour extends TickerBehaviour{
 			msg.addReceiver(new AID("Tanker2",AID.ISLOCALNAME));
 
 			//Mandatory to use this method (it takes into account the environment to decide if someone is reachable or not)
-			((AbstractDedaleAgent)this.myAgent).send(msg);
+			this.myAgent.send(msg);
 			// System.out.println("Message sent");
 		}
 	}
