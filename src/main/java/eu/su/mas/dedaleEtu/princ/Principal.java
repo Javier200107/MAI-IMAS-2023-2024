@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import eu.su.mas.dedaleEtu.mas.agents.CollectorAgent;
+import eu.su.mas.dedaleEtu.mas.agents.ExplorerAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.DummyCollectorAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.DummyMovingAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.explo.ExploreCoopAgent;
@@ -334,15 +335,15 @@ public class Principal {
 		// Object[] entityParameters = { ConfigurationFile.DEFAULT_COMMUNICATION_REACH };
 
 		agentName = "Explo1";
-		ag = createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Explo2";
-		ag = createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Explo3";
-		ag = createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Collect1";
