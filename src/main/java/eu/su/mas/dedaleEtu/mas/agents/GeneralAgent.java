@@ -1,6 +1,7 @@
 package eu.su.mas.dedaleEtu.mas.agents;
 
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
+import eu.su.mas.dedale.mas.agent.behaviours.platformManagment.startMyBehaviours;
 import eu.su.mas.dedale.env.Observation;
 
 import jade.lang.acl.MessageTemplate;
@@ -24,6 +25,11 @@ import java.util.List;
 import dataStructures.tuple.Couple;
 
 public class GeneralAgent extends AbstractDedaleAgent {
+	/**
+    *
+    */
+	private static final long serialVersionUID = -1784844593772918359L;
+
 	private String type;
 	private AID brains;
 	
@@ -77,6 +83,8 @@ public class GeneralAgent extends AbstractDedaleAgent {
 		        }
 			}
 		});
+		
+		addBehaviour(new startMyBehaviours(this,lb));
 	}
 	
 	private Integer sumFreeSpace(List<Couple<Observation, Integer>> bp) {

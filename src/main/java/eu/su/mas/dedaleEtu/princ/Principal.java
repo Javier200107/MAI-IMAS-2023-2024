@@ -6,6 +6,7 @@ import java.util.List;
 
 import eu.su.mas.dedaleEtu.mas.agents.CollectorAgent;
 import eu.su.mas.dedaleEtu.mas.agents.ExplorerAgent;
+import eu.su.mas.dedaleEtu.mas.agents.GeneralAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.DummyCollectorAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.DummyMovingAgent;
 import eu.su.mas.dedaleEtu.mas.agents.dummies.explo.ExploreCoopAgent;
@@ -335,40 +336,40 @@ public class Principal {
 		// Object[] entityParameters = { ConfigurationFile.DEFAULT_COMMUNICATION_REACH };
 
 		agentName = "Explo1";
-		ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, GeneralAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Explo2";
-		ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
-		agentList.add(ag);
+		//ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
+		//agentList.add(ag);
 
 		agentName = "Explo3";
-		ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
-		agentList.add(ag);
+		//ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
+		//agentList.add(ag);
 
 		agentName = "Collect1";
-		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, GeneralAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Collect2";
-		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
-		agentList.add(ag);
+		//ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
+		//agentList.add(ag);
 
 		agentName = "Collect3";
-		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
-		agentList.add(ag);
+		//ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
+		//agentList.add(ag);
 
 		agentName = "Collect4";
-		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
-		agentList.add(ag);
+		//ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
+		//agentList.add(ag);
 
 		agentName = "Tanker1";
-		ag = createNewDedaleAgent(c, agentName, TankerAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, GeneralAgent.class.getName(), entityParameters);
 		agentList.add(ag);
 
 		agentName = "Tanker2";
-		ag = createNewDedaleAgent(c, agentName, TankerAgent.class.getName(), entityParameters);
-		agentList.add(ag);
+		//ag = createNewDedaleAgent(c, agentName, TankerAgent.class.getName(), entityParameters);
+		//agentList.add(ag);
 
 		/*********************
 		 * All agents created
