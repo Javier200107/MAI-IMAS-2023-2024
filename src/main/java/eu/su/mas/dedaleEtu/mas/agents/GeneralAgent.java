@@ -48,7 +48,6 @@ public class GeneralAgent extends AbstractDedaleAgent {
 		
 		lb.add(new OneShotBehaviour() {
 			public void action () {
-				System.out.println("one shot behaviour");
 				int sum = sumFreeSpace(getBackPackFreeSpace());
 				boolean lock_picking = canPickLock(getMyExpertise());
 				
@@ -65,7 +64,7 @@ public class GeneralAgent extends AbstractDedaleAgent {
 				else {
 					type = "Tanker";
 					// TODO: add collector brains
-					System.out.println("I am a collector!");
+					System.out.println("I am a tanker!");
 				}
 
 				// Registre al DF
