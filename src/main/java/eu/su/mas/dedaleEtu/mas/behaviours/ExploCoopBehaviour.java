@@ -47,6 +47,8 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 	private static final long serialVersionUID = 8567689731496787661L;
 
 	private boolean finished = false;
+	
+	private boolean explored = false;
 
 	/**
 	 * Current knowledge of the agent regarding the environment
@@ -65,8 +67,6 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 		super(myagent);
 		this.myMap=myMap;
 		this.list_agentNames=agentNames;
-		
-		
 	}
 
 	@Override
@@ -86,6 +86,7 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 
 			/**
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
+			 * REMOVE
 			 */
 			try {
 				this.myAgent.doWait(1000);
@@ -95,6 +96,12 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 
 			//1) remove the current node from openlist and add it to closedNodes.
 			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed);
+			
+			if (!lobs.get(0).getRight().isEmpty() && !lobs.get(0).getRight().get(0).getLeft().equals(Observation.LOCKSTATUS)){
+                Observation treasure_observed = lobs.get(0).getRight().get(0).getLeft();
+                // Change print message
+                System.out.println(this.myAgent.getLocalName()+" - I try to open the safe" + lobs.get(0).getLeft() + " : " + treasure_observed + ", " +((AbstractDedaleAgent) this.myAgent).openLock(treasure_observed));
+			}
 
 			//2) get the surrounding nodes and, if not in closedNodes, add them to open nodes.
 			String nextNodeId=null;
