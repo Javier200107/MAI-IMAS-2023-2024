@@ -341,20 +341,20 @@ public class Principal {
 		//agentList.add(ag);
 
 		agentName = "Collect1";
-		//ag = createNewDedaleAgent(c, agentName, GeneralAgent.class.getName(), entityParameters);
-		//agentList.add(ag);
+		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
+		agentList.add(ag);
 
 		agentName = "Collect2";
-		//ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
-		//agentList.add(ag);
+		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
+		agentList.add(ag);
 
 		agentName = "Collect3";
-		//ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
-		//agentList.add(ag);
+		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
+		agentList.add(ag);
 
 		agentName = "Collect4";
-		//ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
-		//agentList.add(ag);
+		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
+		agentList.add(ag);
 
 		agentName = "Tanker1";
 		//ag = createNewDedaleAgent(c, agentName, GeneralAgent.class.getName(), entityParameters);
