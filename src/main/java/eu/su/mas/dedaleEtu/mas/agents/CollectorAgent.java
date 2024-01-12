@@ -1,37 +1,20 @@
 package eu.su.mas.dedaleEtu.mas.agents;
 
-import dataStructures.tuple.Couple;
-import eu.su.mas.dedale.env.Location;
-import eu.su.mas.dedale.env.Observation;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
-import eu.su.mas.dedale.mas.agent.behaviours.platformManagment.*;
-import eu.su.mas.dedale.mas.agents.dedaleDummyAgents.DummyCollectorAgent;
-import eu.su.mas.dedaleEtu.mas.behaviours.CollectorBehaviour;
-import eu.su.mas.dedaleEtu.mas.behaviours.InformTankerBehaviour;
+import eu.su.mas.dedale.mas.agent.behaviours.platformManagment.startMyBehaviours;
 
-import java.io.IOException;
+import eu.su.mas.dedaleEtu.mas.behaviours.CollectorBehaviour;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-import eu.su.mas.dedaleEtu.mas.behaviours.RandomWalkBehaviour;
 import jade.core.behaviours.Behaviour;
-import jade.core.behaviours.TickerBehaviour;
 
-/**
- * This dummy collector moves randomly, tries all its methods at each time step, store the treasure that match is treasureType
- * in its backpack and intends to empty its backPack in the Tanker agent. @see {@link eu.su.mas.dedaleEtu.mas.behaviours.RandomWalkBehaviour}
- *
- * @author hc
- *
- */
-public class CollectorAgent extends AbstractDedaleAgent{
+public class CollectorAgent extends AbstractDedaleAgent {
 
     /**
      *
      */
     private static final long serialVersionUID = -1784844593772918359L;
-
 
 
     /**
@@ -45,23 +28,12 @@ public class CollectorAgent extends AbstractDedaleAgent{
 
         super.setup();
 
-        List<Behaviour> lb=new ArrayList<Behaviour>();
-        lb.add(new CollectorBehaviour(this));
-        lb.add(new InformTankerBehaviour(this));
-        //lb.add(new RandomWalkExchangeBehaviour(this));
+        List<Behaviour> l_behaviours = new ArrayList<Behaviour>();
+        l_behaviours.add(new CollectorBehaviour(this));
 
-        addBehaviour(new startMyBehaviours(this,lb));
+        addBehaviour(new startMyBehaviours(this, l_behaviours));
 
-
-        System.out.println("the  agent "+this.getLocalName()+ " is started");
+        System.out.println("Agent "+this.getLocalName()+ " created");
 
     }
-
-    /**
-     * This method is automatically called after doDelete()
-     */
-    protected void takeDown(){
-
-    }
-
 }
