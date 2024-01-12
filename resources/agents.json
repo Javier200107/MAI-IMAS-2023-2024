@@ -2,7 +2,7 @@
   {
     "agentType": "agentExplo",
     "agentName": "Explo1",
-    "communicationRange": 100,
+    "communicationRange": 1100,
     "initialLocation": "free",
     "backPackCapacityGold": -1,
     "backPackCapacityDiamond": -1,
@@ -13,7 +13,7 @@
   {
     "agentType": "agentExplo",
     "agentName": "Explo2",
-    "communicationRange": 100,
+    "communicationRange": 1100,
     "initialLocation": "free",
     "backPackCapacityGold": -1,
     "backPackCapacityDiamond": -1,
@@ -24,7 +24,7 @@
   {
     "agentType": "agentExplo",
     "agentName": "Explo3",
-    "communicationRange": 100,
+    "communicationRange": 1100,
     "initialLocation": "free",
     "backPackCapacityGold": -1,
     "backPackCapacityDiamond": -1,
@@ -35,7 +35,7 @@
   {
     "agentType": "agentCollect",
     "agentName": "Collect1",
-    "communicationRange": 100,
+    "communicationRange": 1100,
     "initialLocation": "free",
     "backPackCapacityGold": 50,
     "backPackCapacityDiamond": -1,
@@ -46,7 +46,7 @@
   {
     "agentType": "agentCollect",
     "agentName": "Collect2",
-    "communicationRange": 100,
+    "communicationRange": 1100,
     "initialLocation": "free",
     "backPackCapacityGold": 50,
     "backPackCapacityDiamond": -1,
@@ -57,7 +57,7 @@
   {
     "agentType": "agentCollect",
     "agentName": "Collect3",
-    "communicationRange": 100,
+    "communicationRange": 1100,
     "initialLocation": "free",
     "backPackCapacityGold": -1,
     "backPackCapacityDiamond": 50,
@@ -68,7 +68,7 @@
   {
     "agentType": "agentCollect",
     "agentName": "Collect4",
-    "communicationRange": 100,
+    "communicationRange": 1100,
     "initialLocation": "free",
     "backPackCapacityGold": -1,
     "backPackCapacityDiamond": 50,
@@ -79,7 +79,7 @@
   {
     "agentType": "agentTanker",
     "agentName": "Tanker1",
-    "communicationRange": 100,
+    "communicationRange": 1100,
     "initialLocation": "free",
     "backPackCapacityGold": 400,
     "backPackCapacityDiamond": 400,
@@ -90,7 +90,7 @@
   {
     "agentType": "agentTanker",
     "agentName": "Tanker2",
-    "communicationRange": 100,
+    "communicationRange": 1100,
     "initialLocation": "free",
     "backPackCapacityGold": 400,
     "backPackCapacityDiamond": 400,
