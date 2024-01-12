@@ -93,7 +93,7 @@ public class DedaleSimpleAchieveREInitiator extends SimpleBehaviour {
 
                     this.endingTime = System.currentTimeMillis() + this.timeout;
                     request.setSender(this.myAgent.getAID());
-                    ((AbstractDedaleAgent) this.myAgent).sendMessage(request);
+                    this.myAgent.send(request);
                     this.state = 2;
                 }
                 break;

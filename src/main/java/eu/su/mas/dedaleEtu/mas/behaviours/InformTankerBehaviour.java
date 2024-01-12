@@ -49,7 +49,7 @@ public class InformTankerBehaviour extends TickerBehaviour{
 			msg.addReceiver(new AID("Tanker2",AID.ISLOCALNAME));
 
 			//Mandatory to use this method (it takes into account the environment to decide if someone is reachable or not)
-			this.myAgent.send(msg);
+			((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
 			// System.out.println("Message sent");
 		}
 	}
