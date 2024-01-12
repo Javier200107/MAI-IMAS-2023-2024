@@ -47,7 +47,7 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 	private static final long serialVersionUID = 8567689731496787661L;
 
 	private boolean finished = false;
-	
+
 	private boolean explored = false;
 
 	/**
@@ -57,101 +57,200 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 
 	private List<String> list_agentNames;
 
-/**
- * 
- * @param myagent reference to the agent we are adding this behaviour to
- * @param myMap known map of the world the agent is living in
- * @param agentNames name of the agents to share the map with
- */
+
+    private static final int TICK_TIME = 300;
+    private int blocked_counter = 0;
+    private int random_tmp_steps = 0;
+
+    private static final int BUFFER_SIZE = 8;
+    private List<String> nodeBuffer = new ArrayList<>(BUFFER_SIZE);
+
+
+	/**
+	 *
+	 * @param myagent
+	 * @param myMap known map of the world the agent is living in
+	 * @param agentNames name of the agents to share the map with
+	 */
 	public ExploCoopBehaviour(final AbstractDedaleAgent myagent, MapRepresentation myMap,List<String> agentNames) {
 		super(myagent);
 		this.myMap=myMap;
 		this.list_agentNames=agentNames;
 	}
 
+    private void tmpRandomMovement(List<Couple<Location,List<Couple<Observation,Integer>>>> lobs){
+        Location next_node = moveToNextNodeRandom(lobs);
+
+        // Update buffer only if the agent moved and if the new node is not in the buffer
+        if (next_node != null && !this.nodeBuffer.contains(next_node)){
+
+            if (this.nodeBuffer.size() == BUFFER_SIZE){
+                this.nodeBuffer.remove(0);
+            }
+
+            this.nodeBuffer.add(next_node.getLocationId());
+        }
+        this.random_tmp_steps -= 1;
+        if (this.random_tmp_steps == 0){
+            System.out.println(this.myAgent.getLocalName() + " - Finished tmp random walk.");
+        }
+    }
+
+    private Location moveToNextNodeRandom(List<Couple<Location,List<Couple<Observation,Integer>>>> lobs){
+        //Random move from the current position
+        Random r= new Random();
+        int moveId=1+r.nextInt(lobs.size()-1); //removing the current position from the list of target to accelerate the tests, but not necessary as to stay is an action
+        Location next_node = lobs.get(moveId).getLeft();
+        Location goal_node = next_node; // select the initial random by default if the following checks fail
+
+        if (!this.nodeBuffer.contains(next_node)){
+            goal_node = next_node;
+        } else {
+            for (int i = 1; i < lobs.size(); i++) {
+                next_node = lobs.get(i).getLeft();
+                if (!this.nodeBuffer.contains(next_node)){
+                    goal_node = next_node;
+                    break;
+                }
+            }
+        }
+
+        Boolean moved = ((AbstractDedaleAgent)this.myAgent).moveTo(goal_node);
+        Integer i = 1;
+        while (!moved && i < lobs.size()) {
+            goal_node = lobs.get(i).getLeft();
+            moved = ((AbstractDedaleAgent)this.myAgent).moveTo(goal_node);
+            i = i+1;
+            // If it enters this loop it means that the agent is blocked. Clearing the buffer will help him move more freely.
+            this.nodeBuffer.clear();
+        }
+
+        if (!moved) {
+            return null;
+            
+        }
+
+        // System.out.println("All nodes in the buffer: " + next_node);
+        return goal_node;
+    }
+
 	@Override
 	public void action() {
 
 		if(this.myMap==null) {
 			this.myMap= new MapRepresentation();
-			this.myAgent.addBehaviour(new ShareMapBehaviour(this.myAgent,500,this.myMap,list_agentNames));
+			this.myAgent.addBehaviour(new ShareMapBehaviour(this.myAgent, TICK_TIME,this.myMap,list_agentNames));
+			//this.myAgent.addBehaviour(new SharePath(this.myAgent, this.myMap));
 		}
-
 		//0) Retrieve the current position
 		Location myPosition=((AbstractDedaleAgent)this.myAgent).getCurrentPosition();
 
 		if (myPosition!=null){
 			//List of observable from the agent's current position
-			List<Couple<Location,List<Couple<Observation,Integer>>>> lobs=((AbstractDedaleAgent)this.myAgent).observe();//myPosition
+			List<Couple<Location,List<Couple<Observation,Integer>>>> lobs=((AbstractDedaleAgent)this.myAgent).observe();
+            
+            if (this.random_tmp_steps > 0){
+                tmpRandomMovement(lobs);
+                return;
+            }
 
 			/**
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
-			 * REMOVE
 			 */
 			try {
-				this.myAgent.doWait(1000);
+				this.myAgent.doWait(this.TICK_TIME);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 
 			//1) remove the current node from openlist and add it to closedNodes.
 			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed);
-			
+
+			//2) get the surrounding nodes and, if not in closedNodes, add them to open nodes.
 			if (!lobs.get(0).getRight().isEmpty() && !lobs.get(0).getRight().get(0).getLeft().equals(Observation.LOCKSTATUS)){
                 Observation treasure_observed = lobs.get(0).getRight().get(0).getLeft();
-                // Change print message
                 System.out.println(this.myAgent.getLocalName()+" - I try to open the safe" + lobs.get(0).getLeft() + " : " + treasure_observed + ", " +((AbstractDedaleAgent) this.myAgent).openLock(treasure_observed));
 			}
 
-			//2) get the surrounding nodes and, if not in closedNodes, add them to open nodes.
-			String nextNodeId=null;
+			String nextNode=null;
 			Iterator<Couple<Location, List<Couple<Observation, Integer>>>> iter=lobs.iterator();
 			while(iter.hasNext()){
-				Location accessibleNode=iter.next().getLeft();
-				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId());
+				Couple<Location, List<Couple<Observation, Integer>>> CurrentNode=iter.next();
+				Location nodeId = CurrentNode.getLeft();
+
+				boolean isNewNode=this.myMap.addNewNode(nodeId.getLocationId());
 				//the node may exist, but not necessarily the edge
-				if (myPosition.getLocationId()!=accessibleNode.getLocationId()) {
-					this.myMap.addEdge(myPosition.getLocationId(), accessibleNode.getLocationId());
-					if (nextNodeId==null && isNewNode) nextNodeId=accessibleNode.getLocationId();
+				if (myPosition!=nodeId) {
+					this.myMap.addEdge(myPosition.getLocationId(), nodeId.getLocationId());
+					if (nextNode==null && isNewNode) nextNode=nodeId.getLocationId();
 				}
 			}
 
 			//3) while openNodes is not empty, continues.
-			if (!this.myMap.hasOpenNode()){
-				//Explo finished
-				finished=true;
-				System.out.println(this.myAgent.getLocalName()+" - Exploration successufully done, behaviour removed.");
+			if (!this.myMap.hasOpenNode() || explored){
+				// Map completed, start random movement
+				explored=true;
+                nextNode = moveToNextNodeRandom(lobs).getLocationId();
+                if (nextNode != null && !this.nodeBuffer.contains(nextNode)){
+
+                    if (this.nodeBuffer.size() == this.BUFFER_SIZE){
+                        this.nodeBuffer.remove(0);
+                    }
+
+                    this.nodeBuffer.add(nextNode);
+                }
 			}else{
 				//4) select next move.
 				//4.1 If there exist one open node directly reachable, go for it,
 				//	 otherwise choose one from the openNode list, compute the shortestPath and go for it
-				if (nextNodeId==null){
+				if (nextNode==null){
 					//no directly accessible openNode
 					//chose one, compute the path and take the first step.
-					nextNodeId=this.myMap.getShortestPathToClosestOpenNode(myPosition.getLocationId()).get(0);//getShortestPath(myPosition,this.openNodes.get(0)).get(0);
-					//System.out.println(this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"| nextNode: "+nextNode);
-				}else {
-					//System.out.println("nextNode notNUll - "+this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"\n -- nextNode: "+nextNode);
+					nextNode=this.myMap.getShortestPathToClosestOpenNode(myPosition.getLocationId()).get(0);//getShortestPath(myPosition,this.openNodes.get(0)).get(0);
+                     
 				}
-				
-				//5) At each time step, the agent check if he received a graph from a teammate. 	
-				// If it was written properly, this sharing action should be in a dedicated behaviour set.
+
+				//5) At each time step, the agent check if he received a graph from a teammate.
 				MessageTemplate msgTemplate=MessageTemplate.and(
 						MessageTemplate.MatchProtocol("SHARE-TOPO"),
 						MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 				ACLMessage msgReceived=this.myAgent.receive(msgTemplate);
 				if (msgReceived!=null) {
-					SerializableSimpleGraph<String, MapAttribute> sgreceived=null;
+					String mclass;
 					try {
-						sgreceived = (SerializableSimpleGraph<String, MapAttribute>)msgReceived.getContentObject();
+						mclass = msgReceived.getContentObject().getClass().getName();
+
 					} catch (UnreadableException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						throw new RuntimeException(e);
 					}
-					this.myMap.mergeMap(sgreceived);
+
+					if (mclass == "dataStructures.serializableGraph.SerializableSimpleGraph") {
+						SerializableSimpleGraph<String, MapAttribute> sgreceived = null;
+						try {
+
+							sgreceived = (SerializableSimpleGraph<String, MapAttribute>) msgReceived.getContentObject();
+						} catch (UnreadableException e) {
+							e.printStackTrace();
+						}
+
+						this.myMap.mergeMap(sgreceived);
+					}
 				}
 
-				((AbstractDedaleAgent)this.myAgent).moveTo(new gsLocation(nextNodeId));
+                // Resolve blocked path with another explorer by doing a tmp random walk
+				if (!explored && !((AbstractDedaleAgent)this.myAgent).moveTo(new gsLocation(nextNode))){
+                    this.blocked_counter += 1;
+                    // System.out.println("Blocked during: " + this.blocked_counter);
+                    if (this.blocked_counter > 5){
+                        System.out.println(this.myAgent.getLocalName() + " - I was blocked for too long. Doing a random walk.");
+                        this.blocked_counter = 0;
+                        this.random_tmp_steps = 10;
+
+                        // After 5 cycles blocked, Do random walk during 10 steps                    
+                    }
+                } else {
+                    this.blocked_counter = 0;
+                }
 			}
 
 		}
@@ -159,7 +258,7 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 
 	@Override
 	public boolean done() {
-		return finished;
+	return finished;
 	}
 
 }
