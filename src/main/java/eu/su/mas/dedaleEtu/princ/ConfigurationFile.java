@@ -52,7 +52,7 @@ public final class ConfigurationFile {
 	// These parameters must be empty if the environment is generated or already online
 
 	// Topology
-	public static String INSTANCE_TOPOLOGY = "resources/topology/tarragona_map.dgs";
+	public static String INSTANCE_TOPOLOGY = "resources/topology/updated_trrg_map1.dgs";
 	// public static String INSTANCE_TOPOLOGY = "resources/topology/URV.dgs";
 
 	// Elements on the map
