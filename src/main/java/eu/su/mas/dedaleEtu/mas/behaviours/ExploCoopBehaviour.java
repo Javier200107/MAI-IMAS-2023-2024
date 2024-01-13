@@ -81,7 +81,7 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
     private void tmpRandomMovement(List<Couple<Location,List<Couple<Observation,Integer>>>> lobs){
         Location next_node = moveToNextNodeRandom(lobs);
 
-        if (next_node != null && !this.nodeBuffer.contains(next_node)){
+        if (next_node != null && !this.nodeBuffer.contains(next_node.toString())){
 
             if (this.nodeBuffer.size() == BUFFER_SIZE){
                 this.nodeBuffer.remove(0);

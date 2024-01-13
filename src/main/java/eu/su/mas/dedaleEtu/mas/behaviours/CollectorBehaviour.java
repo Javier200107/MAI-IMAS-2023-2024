@@ -64,7 +64,6 @@ public class CollectorBehaviour extends TickerBehaviour {
         this.potential_treasures = treasures;
     }
 
-    //
     private String moveToNextNode(List<Couple<Location,List<Couple<Observation,Integer>>>> lobs){
         String s_next_node = this.planned_route.get(this.mission_step);
         boolean valid = false;
@@ -461,6 +460,7 @@ public class CollectorBehaviour extends TickerBehaviour {
             }
 
             List<Couple<Observation, Integer>> backpack_before = ((AbstractDedaleAgent) this.myAgent).getBackPackFreeSpace();
+
 
             // Random choice of the Tanker to contact is implemented. It can be improved if the Tankers inform the
             // Collectors of their position or their free space. However, the latter one makes the system slower
