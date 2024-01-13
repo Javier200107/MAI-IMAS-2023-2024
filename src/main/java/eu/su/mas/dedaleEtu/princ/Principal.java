@@ -358,7 +358,7 @@ public class Principal {
 
 		agentName = "Tanker1";
 		ag = createNewDedaleAgent(c, agentName, GeneralAgent.class.getName(), entityParameters);
-		//agentList.add(ag);
+		agentList.add(ag);
 
 		agentName = "Tanker2";
 		ag = createNewDedaleAgent(c, agentName, TankerAgent.class.getName(), entityParameters);
