@@ -333,12 +333,12 @@ public class Principal {
 		agentList.add(ag);
 
 		agentName = "Explo2";
-		//ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
-		//agentList.add(ag);
+		ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
+		agentList.add(ag);
 
 		agentName = "Explo3";
-		//ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
-		//agentList.add(ag);
+		ag = createNewDedaleAgent(c, agentName, ExplorerAgent.class.getName(), entityParameters);
+		agentList.add(ag);
 
 		agentName = "Collect1";
 		ag = createNewDedaleAgent(c, agentName, CollectorAgent.class.getName(), entityParameters);
@@ -357,12 +357,12 @@ public class Principal {
 		agentList.add(ag);
 
 		agentName = "Tanker1";
-		//ag = createNewDedaleAgent(c, agentName, GeneralAgent.class.getName(), entityParameters);
+		ag = createNewDedaleAgent(c, agentName, GeneralAgent.class.getName(), entityParameters);
 		//agentList.add(ag);
 
 		agentName = "Tanker2";
-		//ag = createNewDedaleAgent(c, agentName, TankerAgent.class.getName(), entityParameters);
-		//agentList.add(ag);
+		ag = createNewDedaleAgent(c, agentName, TankerAgent.class.getName(), entityParameters);
+		agentList.add(ag);
 
 		/*********************
 		 * All agents created

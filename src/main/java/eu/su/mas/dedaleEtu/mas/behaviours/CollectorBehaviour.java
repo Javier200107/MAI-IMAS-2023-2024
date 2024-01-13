@@ -35,7 +35,7 @@ public class CollectorBehaviour extends TickerBehaviour {
     private boolean stop_for_help = false;
     private int stop_patience = 0;
 
-    private List<String> planned_route = new ArrayList<>(Arrays.asList("-116657", "-116656", "-116655", "-116654", "-116653", "-116652", "-116071", "-121367", "-121366", "-121365", "-121364", "-121363", "-121362", "-121361", "-121360", "-121359", "-121358", "-117834"));
+    private List<String> planned_route = new ArrayList<>();
 
 
     public CollectorBehaviour (final AbstractDedaleAgent myagent) {
