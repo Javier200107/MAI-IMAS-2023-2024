@@ -50,6 +50,8 @@ public class CollectorBehaviour extends TickerBehaviour {
         return remaining;
     }
 
+    /* If collector passes by a treasure of its own type, saves the node to send it to an
+      Explorer and ask for the route*/
     private void updateAllPotentialTreasures(){
         List<String> treasures = new ArrayList<>();
         for (HashMap.Entry<String, String> node : this.treasure_types.entrySet()) {
@@ -62,6 +64,7 @@ public class CollectorBehaviour extends TickerBehaviour {
         this.potential_treasures = treasures;
     }
 
+    // 
     private String moveToNextNode(List<Couple<Location,List<Couple<Observation,Integer>>>> lobs){
         String s_next_node = this.planned_route.get(this.mission_step);
         boolean valid = false;
@@ -451,7 +454,21 @@ public class CollectorBehaviour extends TickerBehaviour {
             }
 
             List<Couple<Observation, Integer>> backpack_before = ((AbstractDedaleAgent) this.myAgent).getBackPackFreeSpace();
-            boolean contacted = ((AbstractDedaleAgent)this.myAgent).emptyMyBackPack("Tanker1") || ((AbstractDedaleAgent)this.myAgent).emptyMyBackPack("Tanker2");
+
+            // Random choice of the Tanker to contact is implemented. It can be improved if the Tankers inform the 
+            // Collectors of their position or their free space. However, the latter one makes the system slower
+
+            List<String> tankers = Arrays.asList("Tanker1", "Tanker2");
+            Collections.shuffle(tankers); // Randomly shuffle the list
+
+            boolean contacted = false;
+            for (String tanker : tankers) {
+                contacted = ((AbstractDedaleAgent)this.myAgent).emptyMyBackPack(tanker);
+                if (contacted) {
+                    break;
+                }
+            }
+
             List<Couple<Observation, Integer>> backpack_after = ((AbstractDedaleAgent) this.myAgent).getBackPackFreeSpace();
             boolean delivered = false;
             for (int i = 0; i < backpack_after.size(); i++) {
