@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.*;
 
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
-import eu.su.mas.dedaleEtu.princ.Globals;
+import eu.su.mas.dedaleEtu.princ.Utils;
 
 
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
@@ -132,4 +132,4 @@ public class SharePath extends TickerBehaviour {
 
         ((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
     }
-}}
+}
