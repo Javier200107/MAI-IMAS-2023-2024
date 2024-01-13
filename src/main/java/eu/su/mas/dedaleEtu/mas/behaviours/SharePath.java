@@ -1,10 +1,10 @@
 package eu.su.mas.dedaleEtu.mas.behaviours;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
+import eu.su.mas.dedaleEtu.princ.Globals;
 
 
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
@@ -39,32 +39,65 @@ public class SharePath extends TickerBehaviour {
 
     @Override
     public void onTick() {
-    	return;
+
+        //Handshake
+        ArrayList<String> greet = ReceiveStringMessage("HELLO");
+        if (greet != null){
+            this.last_sender = new ArrayList<>(Arrays.asList(greet.get(1)));
+            SendStringMessage(this.last_sender,"I'm Here","STOP");
+        }
+        //Listen to a path request
+        ArrayList<String> points = (ArrayList<String>) ReceiveObjectMessage("SHARE-POINTS",ACLMessage.REQUEST);
+        if (points != null){
+            List<String> TreasuresPath =new ArrayList<>();
+            List<String> temporalPath = new ArrayList<>();
+            Integer minSize = 500;
+            for (Integer i = 0; i < points.size()-1; i++ ) {
+                try {
+                    temporalPath = this.myMap.getShortestPath(points.get(0), points.get(i+1));
+                    if(minSize >= temporalPath.size()){
+                        TreasuresPath = temporalPath;
+                        minSize = temporalPath.size();
+                    }
+                } catch(Exception e){
+                    System.out.println(this.myAgent.getLocalName() + " - I could not find a solution for the path: " + points.get(0) + ":" + points.get(i+1));
+                }
+            }
+
+            //Send path to agent
+            if (!TreasuresPath.isEmpty()){
+                SendObjectMessage(this.last_sender, TreasuresPath,ACLMessage.INFORM);
+            }
+        } 
     }
 
-    /**********************************************************
-     * 	           SENDING AND RECEIVING MESSAGES
-     *    @param Receivers
-     *    @param message
-     **********************************************************/
+
     private void SendStringMessage(ArrayList<String> Receivers, String message, String protocol) {
-        return;
+        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+        msg.setProtocol(protocol);
+        msg.setSender(this.myAgent.getAID());
+        for (String agentName : Receivers) {
+            msg.addReceiver(new AID(agentName,AID.ISLOCALNAME));
+        }
+        msg.setContent(message);
+        ((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
     }
-
-    /*********************************************************
-     * 	           RECEIVING MESSAGES
-     * @return message
-     *******************************************************/
 
 
     private ArrayList<String> ReceiveStringMessage(String protocol) {
-    	return new ArrayList<String>();
+        MessageTemplate msgTemplate=MessageTemplate.and(
+                MessageTemplate.MatchProtocol(protocol),
+                MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+        ACLMessage msgReceived=this.myAgent.receive(msgTemplate);
+
+        if (msgReceived!=null) {
+            String message = msgReceived.getContent();
+            ArrayList<String> res =new ArrayList<>(Arrays.asList(message,msgReceived.getSender().getLocalName()));
+            return res;
+        }
+        return null;
     }
 
-    /*********************************************************
-     * 	           RECEIVING OBJECTS
-     * @return message
-     *******************************************************/
     private Object ReceiveObjectMessage(String protocol, Object performative) {
         // Receive path from explorer
         MessageTemplate msgTemplate = MessageTemplate.and(
@@ -83,10 +116,6 @@ public class SharePath extends TickerBehaviour {
         return null;
     }
 
-    /*********************************************************
-     * 	           SENDING OBJECTS
-     * @return message
-     *******************************************************/
     private void SendObjectMessage(ArrayList<String> Receivers, Object message, Object performative) {
         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
         msg.setProtocol("SHARE-PATH");
@@ -100,6 +129,7 @@ public class SharePath extends TickerBehaviour {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
         ((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
     }
-}
+}}
