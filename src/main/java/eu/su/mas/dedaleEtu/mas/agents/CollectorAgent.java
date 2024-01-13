@@ -16,15 +16,12 @@ public class CollectorAgent extends AbstractDedaleAgent {
      */
     private static final long serialVersionUID = -1784844593772918359L;
 
-
     /**
-     * This method is automatically called when "agent".start() is executed.
-     * Consider that Agent is launched for the first time.
-     * 			1) set the agent attributes
-     *	 		2) add the behaviours
+     * This method is automatically called when "agent".start() is executed. Consider that Agent is launched for the
+     * first time. 1) set the agent attributes 2) add the behaviours
      *
      */
-    protected void setup(){
+    protected void setup() {
 
         super.setup();
 
@@ -33,7 +30,7 @@ public class CollectorAgent extends AbstractDedaleAgent {
 
         addBehaviour(new startMyBehaviours(this, l_behaviours));
 
-        System.out.println("Agent "+this.getLocalName()+ " created");
+        System.out.println("Agent " + this.getLocalName() + " created");
 
     }
 }
