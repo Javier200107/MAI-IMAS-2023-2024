@@ -1,9 +1,5 @@
 mapname:MultiTypesV2
-<<<<<<< HEAD
-gold:-25700:100:3:3
-=======
 gold:-26307:100:2:2
->>>>>>> c27c68da47c075b94a19a8228ceb79c9812f8c9d
 gold:-25574:80:2:2
 gold:-28458:60:2:1
 gold:-25523:60:1:2
@@ -12,8 +8,4 @@ diamonds:-25710:100:2:2
 diamonds:-25541:80:2:2
 diamonds:-26157:60:2:1
 diamonds:-26063:60:1:2
-<<<<<<< HEAD
-diamonds:-28191:40:1:1
-=======
 diamonds:-28186:40:1:1
->>>>>>> c27c68da47c075b94a19a8228ceb79c9812f8c9d
