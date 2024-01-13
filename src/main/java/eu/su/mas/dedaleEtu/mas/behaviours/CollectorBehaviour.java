@@ -50,6 +50,8 @@ public class CollectorBehaviour extends TickerBehaviour {
         return remaining;
     }
 
+    /* If collector passes by a treasure of its own type, saves the node to send it to an
+      Explorer and ask for the route*/
     private void updateAllPotentialTreasures(){
         List<String> treasures = new ArrayList<>();
         for (HashMap.Entry<String, String> node : this.treasure_types.entrySet()) {
@@ -62,14 +64,15 @@ public class CollectorBehaviour extends TickerBehaviour {
         this.potential_treasures = treasures;
     }
 
+    //
     private String moveToNextNode(List<Couple<Location,List<Couple<Observation,Integer>>>> lobs){
         String s_next_node = this.planned_route.get(this.mission_step);
         boolean valid = false;
         Location next_node = null;
-        for (int i = 0; i < lobs.size(); i++) {
-            if (lobs.get(i).getLeft().toString().equals(s_next_node)){
+        for (Couple<Location, List<Couple<Observation, Integer>>> lob : lobs) {
+            if (lob.getLeft().toString().equals(s_next_node)) {
                 valid = true;
-                next_node = lobs.get(i).getLeft();
+                next_node = lob.getLeft();
                 break;
             }
         }
@@ -82,7 +85,7 @@ public class CollectorBehaviour extends TickerBehaviour {
             return null;
         }
 
-        Boolean moved = ((AbstractDedaleAgent)this.myAgent).moveTo(next_node);
+        boolean moved = ((AbstractDedaleAgent)this.myAgent).moveTo(next_node);
         if (!moved) {
             solveDeadLock();
             return null;
@@ -101,15 +104,19 @@ public class CollectorBehaviour extends TickerBehaviour {
     private String moveToNextNodeRandomly(List<Couple<Location,List<Couple<Observation,Integer>>>> lobs){
         Random r= new Random();
         int moveId=1+r.nextInt(lobs.size()-1);
+
+        // Retrieve the location and string representation of the randomly selected node
         Location next_node = lobs.get(moveId).getLeft();
         Location goal_node = next_node;
         String s_next_node = lobs.get(moveId).getLeft().toString();
         String s_goal_node = s_next_node;
 
+        // Check if the randomly chosen node is already in the node buffer
         if (!this.node_Buffer.contains(s_next_node)){
             s_goal_node = s_next_node;
             goal_node = next_node;
         } else {
+            // If the node is in the buffer, find another node that is not in the buffer
             for (int i = 1; i < lobs.size(); i++) {
                 s_next_node = lobs.get(i).getLeft().toString();
                 next_node = lobs.get(i).getLeft();
@@ -121,8 +128,10 @@ public class CollectorBehaviour extends TickerBehaviour {
             }
         }
 
-        Boolean moved = ((AbstractDedaleAgent)this.myAgent).moveTo(goal_node);
-        Integer i = 1;
+        // Attempt to move to the goal node
+        boolean moved = ((AbstractDedaleAgent)this.myAgent).moveTo(goal_node);
+        int i = 1;
+        // If the move was not successful, try moving to the next available node
         while (!moved && i < lobs.size()) {
             goal_node = lobs.get(i).getLeft();
             moved = ((AbstractDedaleAgent)this.myAgent).moveTo(goal_node);
@@ -130,6 +139,7 @@ public class CollectorBehaviour extends TickerBehaviour {
             this.node_Buffer.clear();
         }
 
+        // Return null if the agent could not move; otherwise, return the string representation of the goal node
         if (!moved) {
             return null;
 
@@ -182,7 +192,7 @@ public class CollectorBehaviour extends TickerBehaviour {
 
         if (msgReceived!=null) {
             String msg_id = msgReceived.getConversationId();
-            if (msg_id == "Blocked") {
+            if (Objects.equals(msg_id, "Blocked")) {
                 List<String> agentPath;
                 try {
                     agentPath = (List<String>) msgReceived.getContentObject();
@@ -354,9 +364,9 @@ public class CollectorBehaviour extends TickerBehaviour {
         ACLMessage msgReceived=this.myAgent.receive(msgTemplate);
 
         if (msgReceived!=null) {
-            Boolean updated = false;
-            String msg_id = (String) msgReceived.getConversationId();
-            if (msg_id == "Type") {
+            boolean updated = false;
+            String msg_id = msgReceived.getConversationId();
+            if (Objects.equals(msg_id, "Type")) {
                 HashMap<String, String> treasureType;
                 try {
                     treasureType = (HashMap<String, String>) msgReceived.getContentObject();
@@ -417,7 +427,7 @@ public class CollectorBehaviour extends TickerBehaviour {
 
 
         if (!Objects.equals(s_myPosition, "")){
-            List<Couple<Location,List<Couple<Observation,Integer>>>> lobs=((AbstractDedaleAgent)this.myAgent).observe();//myPosition
+            List<Couple<Location,List<Couple<Observation,Integer>>>> lobs=((AbstractDedaleAgent)this.myAgent).observe();
 
             List<Couple<Observation,Integer>> lObservations= lobs.get(0).getRight();
 
@@ -451,7 +461,21 @@ public class CollectorBehaviour extends TickerBehaviour {
             }
 
             List<Couple<Observation, Integer>> backpack_before = ((AbstractDedaleAgent) this.myAgent).getBackPackFreeSpace();
-            boolean contacted = ((AbstractDedaleAgent)this.myAgent).emptyMyBackPack("Tanker1") || ((AbstractDedaleAgent)this.myAgent).emptyMyBackPack("Tanker2");
+
+            // Random choice of the Tanker to contact is implemented. It can be improved if the Tankers inform the
+            // Collectors of their position or their free space. However, the latter one makes the system slower
+
+            List<String> tankers = Arrays.asList("Tanker1", "Tanker2");
+            Collections.shuffle(tankers); // Randomly shuffle the list
+
+            boolean contacted = false;
+            for (String tanker : tankers) {
+                contacted = ((AbstractDedaleAgent)this.myAgent).emptyMyBackPack(tanker);
+                if (contacted) {
+                    break;
+                }
+            }
+
             List<Couple<Observation, Integer>> backpack_after = ((AbstractDedaleAgent) this.myAgent).getBackPackFreeSpace();
             boolean delivered = false;
             for (int i = 0; i < backpack_after.size(); i++) {
@@ -504,5 +528,4 @@ public class CollectorBehaviour extends TickerBehaviour {
         }
     }
 }
-
 
