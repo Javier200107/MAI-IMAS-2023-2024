@@ -18,7 +18,7 @@ public class TankerBehaviour extends TickerBehaviour {
     private final AbstractDedaleAgent agent;
     private final String agentName;
 
-    private List<Location> nodeBuffer = new ArrayList<>(16);
+    private List<Location> prevNodes = new ArrayList<>(8);
 
     public TankerBehaviour(final AbstractDedaleAgent myagent) {
         super(myagent, 600);
@@ -55,7 +55,7 @@ public class TankerBehaviour extends TickerBehaviour {
             Location currentNode = observationsList.get(currentIndex).getLeft();
 
             // Check if the current node is not in the node buffer
-            if (!nodeBuffer.contains(currentNode)) {
+            if (!prevNodes.contains(currentNode)) {
                 goalNode = currentNode;
                 break;
             }
@@ -69,7 +69,7 @@ public class TankerBehaviour extends TickerBehaviour {
 
         // Clear the node buffer if a move was successful
         if (moved) {
-            nodeBuffer.clear();
+            prevNodes.clear();
             return goalNode;
         }
 
@@ -86,10 +86,10 @@ public class TankerBehaviour extends TickerBehaviour {
             // List of observable from the agent's current position
             List<Couple<Location, List<Couple<Observation, Integer>>>> lobs = agent.observe();// myPosition
 
-            Location next_node = chooseNextGoalNode(lobs);
+            Location newNode = chooseNextGoalNode(lobs);
 
-            if (next_node != null) {
-                this.nodeBuffer.add(next_node);
+            if (newNode != null) {
+                this.prevNodes.add(newNode);
             }
 
             System.out.println(agentName + " -- list of observables: " + lobs);
