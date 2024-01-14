@@ -173,7 +173,30 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 		return false;
 	}
 
-	// hohohoho
+	@Override
+	public void action() {
+
+		initializeMapAndBehaviours();
+
+		Location currentLocation = getCurrentAgentPosition();
+		if (currentLocation == null) {
+			return;
+		}
+		List<Couple<Location, List<Couple<Observation, Integer>>>> observations = getObservations();
+		if (randomMovementStepsLeft > 0) {
+			performRandomMovement(observations);
+			return;
+		}
+
+		safelyWait(TICK_TIME);
+
+		updateMapWithCurrentLocation(currentLocation);
+		handleTreasureObservation(observations);
+
+		String nextNode = processObservationsAndUpdateMap(observations, currentLocation);
+		manageAgentMovement(nextNode, observations, currentLocation);
+
+	}
 
 	private void initializeMapAndBehaviours() {
 		if (this.myMap == null) {
@@ -286,138 +309,6 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 			} else {
 				this.blocked_counter = 0;
 			}
-		}
-	}
-
-	// @Override
-	// public void action() {
-
-	// initializeMapAndBehaviours();
-
-	// Location currentLocation = getCurrentAgentPosition();
-	// if (currentLocation == null) {
-	// return;
-	// }
-	// List<Couple<Location, List<Couple<Observation, Integer>>>> observations = getObservations();
-	// if (randomMovementStepsLeft > 0) {
-	// performRandomMovement(observations);
-	// return;
-	// }
-
-	// safelyWait(TICK_TIME);
-
-	// updateMapWithCurrentLocation(currentLocation);
-	// handleTreasureObservation(observations);
-
-	// String nextNode = processObservationsAndUpdateMap(observations, currentLocation);
-	// manageAgentMovement(nextNode, observations, currentLocation);
-
-	// }
-
-	@Override
-	public void action() {
-
-		if (this.myMap == null) {
-			this.myMap = new MapRepresentation();
-			this.myAgent.addBehaviour(new ShareMapBehaviour(this.myAgent, TICK_TIME, this.myMap, list_agentNames));
-			this.myAgent.addBehaviour(new SharePath(this.myAgent, this.myMap));
-		}
-		Location myPosition = ((AbstractDedaleAgent) this.myAgent).getCurrentPosition();
-
-		if (myPosition != null) {
-			List<Couple<Location, List<Couple<Observation, Integer>>>> lobs = ((AbstractDedaleAgent) this.myAgent)
-					.observe();
-
-			if (this.randomMovementStepsLeft > 0) {
-				performRandomMovement(lobs);
-				return;
-			}
-
-			try {
-				this.myAgent.doWait(TICK_TIME);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed);
-
-			if (!lobs.get(0).getRight().isEmpty()
-					&& !lobs.get(0).getRight().get(0).getLeft().equals(Observation.LOCKSTATUS)) {
-				Observation treasure_observed = lobs.get(0).getRight().get(0).getLeft();
-				System.out.println(this.myAgent.getLocalName() + " - I try to open the safe" + lobs.get(0).getLeft()
-						+ " : " + treasure_observed + ", "
-						+ ((AbstractDedaleAgent) this.myAgent).openLock(treasure_observed));
-			}
-
-			String nextNode = null;
-			Iterator<Couple<Location, List<Couple<Observation, Integer>>>> iter = lobs.iterator();
-			while (iter.hasNext()) {
-				Couple<Location, List<Couple<Observation, Integer>>> CurrentNode = iter.next();
-				Location nodeId = CurrentNode.getLeft();
-
-				boolean isNewNode = this.myMap.addNewNode(nodeId.getLocationId());
-				if (myPosition != nodeId) {
-					this.myMap.addEdge(myPosition.getLocationId(), nodeId.getLocationId());
-					if (nextNode == null && isNewNode)
-						nextNode = nodeId.getLocationId();
-				}
-			}
-
-			if (!this.myMap.hasOpenNode() || explored) {
-				explored = true;
-				nextNode = moveToNextRandomNode(lobs).getLocationId();
-				if (nextNode != null && !this.nodeBuffer.contains(nextNode)) {
-
-					if (this.nodeBuffer.size() == this.BUFFER_SIZE) {
-						this.nodeBuffer.remove(0);
-					}
-
-					this.nodeBuffer.add(nextNode);
-				}
-			} else {
-				if (nextNode == null) {
-					nextNode = this.myMap.getShortestPathToClosestOpenNode(myPosition.getLocationId()).get(0);
-
-				}
-
-				MessageTemplate msgTemplate = MessageTemplate.and(MessageTemplate.MatchProtocol("SHARE-TOPO"),
-						MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-				ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
-				if (msgReceived != null) {
-					String mclass;
-					try {
-						mclass = msgReceived.getContentObject().getClass().getName();
-
-					} catch (UnreadableException e) {
-						throw new RuntimeException(e);
-					}
-
-					if (mclass == "dataStructures.serializableGraph.SerializableSimpleGraph") {
-						SerializableSimpleGraph<String, MapAttribute> sgreceived = null;
-						try {
-
-							sgreceived = (SerializableSimpleGraph<String, MapAttribute>) msgReceived.getContentObject();
-						} catch (UnreadableException e) {
-							e.printStackTrace();
-						}
-
-						this.myMap.mergeMap(sgreceived);
-					}
-				}
-
-				if (!explored && !((AbstractDedaleAgent) this.myAgent).moveTo(new gsLocation(nextNode))) {
-					this.blocked_counter += 1;
-					if (this.blocked_counter > 5) {
-						System.out.println(
-								this.myAgent.getLocalName() + " - I was blocked for too long. Doing a random walk.");
-						this.blocked_counter = 0;
-						this.randomMovementStepsLeft = 10;
-					}
-				} else {
-					this.blocked_counter = 0;
-				}
-			}
-
 		}
 	}
 
