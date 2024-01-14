@@ -183,7 +183,10 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 		handleTreasureObservation(observations);
 
 		String nextNode = processObservationsAndUpdateMap(observations, currentLocation);
-		manageAgentMovement(nextNode, observations, currentLocation);
+		if (observations != null && !observations.isEmpty()) {
+			System.out.println(this.myAgent.getLocalName() + " - " + observations);
+			manageAgentMovement(nextNode, observations, currentLocation);
+		}
 
 	}
 
@@ -246,7 +249,14 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 
 		if (!this.myMap.hasOpenNode() || explored) {
 			explored = true;
-			nextNode = moveToNextRandomNode(observations).getLocationId();
+			Location nextNodeAux = moveToNextRandomNode(observations);
+			if (nextNodeAux == null) {
+				System.out
+						.println(this.myAgent.getLocalName() + " - Exploration successufully done, behaviour removed.");
+				this.finished = true;
+				return;
+			}
+			nextNode = nextNodeAux.getLocationId();
 			if (nextNode != null && !this.nodeBuffer.contains(nextNode)) {
 
 				if (this.nodeBuffer.size() == this.BUFFER_SIZE) {
