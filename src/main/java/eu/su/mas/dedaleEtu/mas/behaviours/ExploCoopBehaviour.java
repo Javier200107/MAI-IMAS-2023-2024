@@ -107,70 +107,59 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 	}
 
 	/**
-	 * Selects and moves to a random next node from the provided list of locations and observations. Ensures that the
-	 * chosen node is not already in the node buffer.
+	 * Moves to a random node from a list of locations and observations.
 	 *
-	 * @param locationObservationList List of locations paired with their observations.
-	 * @return The goal node if moved successfully; otherwise, null.
+	 * @param locationsWithObservations A list of locations paired with their respective observations.
+	 * @return The goal location node if movement is successful, otherwise null.
 	 */
 	private Location moveToNextRandomNode(
-			List<Couple<Location, List<Couple<Observation, Integer>>>> locationObservationList) {
-		Random random = new Random();
-		int randomIndex = random.nextInt(locationObservationList.size());
-		Location selectedNode = locationObservationList.get(randomIndex).getLeft();
+			List<Couple<Location, List<Couple<Observation, Integer>>>> locationsWithObservations) {
 
-		// Find a node that is not in the node buffer.
-		Location goalNode = findUnvisitedNode(selectedNode, locationObservationList);
+		// Initialize a random number generator
+		Random randomGenerator = new Random();
 
-		// Attempt to move to the goal node.
-		boolean isMoveSuccessful = attemptMoveToNode(goalNode, locationObservationList);
+		// Generate a random index to select a node from the list
+		int randomIndex = 1 + randomGenerator.nextInt(locationsWithObservations.size() - 1);
 
-		return isMoveSuccessful ? goalNode : null;
-	}
+		// Select a node based on the random index
+		Location selectedNode = locationsWithObservations.get(randomIndex).getLeft();
 
-	/**
-	 * Finds a node that has not been visited (not in the node buffer). Starts from the provided node and checks other
-	 * nodes if necessary.
-	 *
-	 * @param startNode               The node to start the search from.
-	 * @param locationObservationList List of locations paired with their observations.
-	 * @return An unvisited node if found; otherwise, returns the start node.
-	 */
-	private Location findUnvisitedNode(Location startNode,
-			List<Couple<Location, List<Couple<Observation, Integer>>>> locationObservationList) {
-		if (!this.nodeBuffer.contains(startNode.toString())) {
-			return startNode;
-		}
+		// Initialize the goal node as the selected node
+		Location goalNode = selectedNode;
 
-		for (Couple<Location, List<Couple<Observation, Integer>>> locationObservation : locationObservationList) {
-			Location currentNode = locationObservation.getLeft();
-			if (!this.nodeBuffer.contains(currentNode.toString())) {
-				return currentNode;
+		// Check if the selected node is already in the buffer (visited)
+		if (!this.nodeBuffer.contains(selectedNode)) {
+			goalNode = selectedNode;
+		} else {
+			// If the selected node is in the buffer, find the next unvisited node
+			for (int index = 1; index < locationsWithObservations.size(); index++) {
+				selectedNode = locationsWithObservations.get(index).getLeft();
+				if (!this.nodeBuffer.contains(selectedNode)) {
+					goalNode = selectedNode;
+					break;
+				}
 			}
 		}
 
-		return startNode;
-	}
+		// Attempt to move to the goal node
+		boolean hasMoved = ((AbstractDedaleAgent) this.myAgent).moveTo(goalNode);
 
-	/**
-	 * Attempts to move the agent to the specified node. If the first attempt fails, tries other nodes in the list until
-	 * a successful move or all options are exhausted.
-	 *
-	 * @param initialNode             The initial node to attempt to move to.
-	 * @param locationObservationList List of locations paired with their observations.
-	 * @return True if the move was successful; otherwise, false.
-	 */
-	private boolean attemptMoveToNode(Location initialNode,
-			List<Couple<Location, List<Couple<Observation, Integer>>>> locationObservationList) {
-		for (Couple<Location, List<Couple<Observation, Integer>>> locationObservation : locationObservationList) {
-			Location currentNode = locationObservation.getLeft();
-			boolean moved = ((AbstractDedaleAgent) this.myAgent).moveTo(currentNode);
-			if (moved) {
-				return true;
-			}
-			// Optional: Add logic to handle failed movement, e.g., update node buffer.
+		// If unable to move, try the next node in the list
+		int attemptIndex = 1;
+		while (!hasMoved && attemptIndex < locationsWithObservations.size()) {
+			goalNode = locationsWithObservations.get(attemptIndex).getLeft();
+			hasMoved = ((AbstractDedaleAgent) this.myAgent).moveTo(goalNode);
+			attemptIndex++;
+			this.nodeBuffer.clear();
 		}
-		return false;
+
+		// If still unable to move, return null
+		if (!hasMoved) {
+			return null;
+		}
+
+		// Return the goal node if movement is successful
+		return goalNode;
 	}
 
 	@Override
@@ -231,9 +220,8 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 		if (!observations.get(0).getRight().isEmpty()
 				&& !observations.get(0).getRight().get(0).getLeft().equals(Observation.LOCKSTATUS)) {
 			Observation treasure_observed = observations.get(0).getRight().get(0).getLeft();
-			System.out.println(this.myAgent.getLocalName() + " - I try to open the safe" + observations.get(0).getLeft()
-					+ " : " + treasure_observed + ", "
-					+ ((AbstractDedaleAgent) this.myAgent).openLock(treasure_observed));
+			System.out.println(this.myAgent.getLocalName() + " - open the safe" + observations.get(0).getLeft() + " : "
+					+ treasure_observed + ", " + ((AbstractDedaleAgent) this.myAgent).openLock(treasure_observed));
 		}
 	}
 
@@ -301,8 +289,7 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 			if (!explored && !((AbstractDedaleAgent) this.myAgent).moveTo(new gsLocation(nextNode))) {
 				this.blocked_counter += 1;
 				if (this.blocked_counter > 5) {
-					System.out.println(
-							this.myAgent.getLocalName() + " - I was blocked for too long. Doing a random walk.");
+					System.out.println(this.myAgent.getLocalName() + " - blocked too long. random walk.");
 					this.blocked_counter = 0;
 					this.randomMovementStepsLeft = 10;
 				}
