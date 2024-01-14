@@ -1,11 +1,11 @@
 package eu.su.mas.dedaleEtu.mas.behaviours;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedaleEtu.princ.Utils;
-
 
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 
@@ -17,7 +17,6 @@ import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.UnreadableException;
 import jade.core.Agent;
 
-
 public class SharePath extends TickerBehaviour {
     /**
      * When an agent choose to move
@@ -27,109 +26,174 @@ public class SharePath extends TickerBehaviour {
 
     private MapRepresentation myMap;
 
-    ArrayList<String> last_sender;
+    ArrayList<String> lastSender;
 
-
-    public SharePath (Agent myagent, MapRepresentation myMap) {
+    public SharePath(Agent myagent, MapRepresentation myMap) {
         super(myagent, 300);
-        this.myMap=myMap;
-        this.myAgent=myagent;
+        this.myMap = myMap;
+        this.myAgent = myagent;
 
     }
 
     @Override
     public void onTick() {
 
-        //Handshake
-        ArrayList<String> greet = ReceiveStringMessage("HELLO");
-        if (greet != null){
-            this.last_sender = new ArrayList<>(Arrays.asList(greet.get(1)));
-            SendStringMessage(this.last_sender,"I'm Here","STOP");
+        // Receiving a handshake message with the keyword "HELLO"
+        ArrayList<String> handshakeMessage = receiveStringMessage("HELLO");
+        if (handshakeMessage != null) {
+            // Store the sender of the last received message
+            this.lastSender = new ArrayList<>(Arrays.asList(handshakeMessage.get(1)));
+            // Responding to the handshake message
+            sendStringMessage(this.lastSender, "I'm Here", "STOP");
         }
-        //Listen to a path request
-        ArrayList<String> points = (ArrayList<String>) ReceiveObjectMessage("SHARE-POINTS",ACLMessage.REQUEST);
-        if (points != null){
-            List<String> TreasuresPath =new ArrayList<>();
-            List<String> temporalPath = new ArrayList<>();
-            Integer minSize = 500;
-            for (Integer i = 0; i < points.size()-1; i++ ) {
+
+        // Listening for a path request message with specific format and type
+        ArrayList<String> requestedPoints = (ArrayList<String>) receiveObjectMessage("SHARE-POINTS",
+                ACLMessage.REQUEST);
+        if (requestedPoints != null) {
+            List<String> shortestTreasurePath = new ArrayList<>();
+            List<String> currentPath = new ArrayList<>();
+            Integer minimumPathSize = 500; // Initial large value for comparison
+            // Iterating through all requested points to find the shortest path
+            for (Integer i = 0; i < requestedPoints.size() - 1; i++) {
                 try {
-                    temporalPath = this.myMap.getShortestPath(points.get(0), points.get(i+1));
-                    if(minSize >= temporalPath.size()){
-                        TreasuresPath = temporalPath;
-                        minSize = temporalPath.size();
+                    // Getting the shortest path between two points
+                    currentPath = this.myMap.getShortestPath(requestedPoints.get(0), requestedPoints.get(i + 1));
+                    // Updating the shortest path if a shorter one is found
+                    if (minimumPathSize >= currentPath.size()) {
+                        shortestTreasurePath = currentPath;
+                        minimumPathSize = currentPath.size();
                     }
-                } catch(Exception e){
-                    System.out.println(this.myAgent.getLocalName() + " - I could not find a solution for the path: " + points.get(0) + ":" + points.get(i+1));
+                } catch (Exception e) {
+                    // Logging in case path calculation fails
+                    System.out.println(this.myAgent.getLocalName() + " - I could not find a solution for the path: "
+                            + requestedPoints.get(0) + ":" + requestedPoints.get(i + 1));
                 }
             }
 
-            //Send path to agent
-            if (!TreasuresPath.isEmpty()){
-                SendObjectMessage(this.last_sender, TreasuresPath,ACLMessage.INFORM);
+            // Sending the shortest path to the requesting agent
+            if (!shortestTreasurePath.isEmpty()) {
+                sendObjectMessage(this.lastSender, shortestTreasurePath, ACLMessage.INFORM);
             }
-        } 
+        }
     }
 
-
-    private void SendStringMessage(ArrayList<String> Receivers, String message, String protocol) {
+    /**
+     * Sends a string message to multiple receivers using a specified protocol.
+     *
+     * @param receivers The list of receiver agent names.
+     * @param message   The message content to be sent.
+     * @param protocol  The communication protocol used for the message.
+     */
+    private void sendStringMessage(ArrayList<String> receivers, String message, String protocol) {
+        // Creating a new ACL message with the INFORM performative
         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+        // Setting the protocol of the message
         msg.setProtocol(protocol);
+        // Setting the sender of the message
         msg.setSender(this.myAgent.getAID());
-        for (String agentName : Receivers) {
-            msg.addReceiver(new AID(agentName,AID.ISLOCALNAME));
+
+        // Adding each receiver to the message
+        for (String agentName : receivers) {
+            msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
         }
+        // Setting the content of the message
         msg.setContent(message);
-        ((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
+        // Sending the message through the agent's communication interface
+        ((AbstractDedaleAgent) this.myAgent).sendMessage(msg);
     }
 
-
-    private ArrayList<String> ReceiveStringMessage(String protocol) {
-        MessageTemplate msgTemplate=MessageTemplate.and(
-                MessageTemplate.MatchProtocol(protocol),
+    /**
+     * Receives a string message that matches a specific protocol.
+     *
+     * @param protocol The communication protocol to match in the received messages.
+     * @return An ArrayList containing the message content and the sender's local name, or null if no message is
+     *         received.
+     */
+    private ArrayList<String> receiveStringMessage(String protocol) {
+        // Creating a message template to filter messages based on protocol and performative
+        MessageTemplate msgTemplate = MessageTemplate.and(MessageTemplate.MatchProtocol(protocol),
                 MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-        ACLMessage msgReceived=this.myAgent.receive(msgTemplate);
 
-        if (msgReceived!=null) {
-            String message = msgReceived.getContent();
-            ArrayList<String> res =new ArrayList<>(Arrays.asList(message,msgReceived.getSender().getLocalName()));
-            return res;
+        // Receiving the message that fits the template
+        ACLMessage receivedMessage = this.myAgent.receive(msgTemplate);
+
+        // Checking if a message was received
+        if (receivedMessage != null) {
+            // Extracting the content of the message
+            String messageContent = receivedMessage.getContent();
+            // Preparing the result with the message content and sender's local name
+            ArrayList<String> result = new ArrayList<>(
+                    Arrays.asList(messageContent, receivedMessage.getSender().getLocalName()));
+            return result;
         }
+        // Return null if no message is received
         return null;
     }
 
-    private Object ReceiveObjectMessage(String protocol, Object performative) {
-        // Receive path from explorer
-        MessageTemplate msgTemplate = MessageTemplate.and(
-                MessageTemplate.MatchProtocol(protocol),
+    /**
+     * Receives an object message that matches a specific protocol and performative.
+     *
+     * @param protocol     The communication protocol to match in the received messages.
+     * @param performative The performative type of the message to be received.
+     * @return An Object which is typically an ArrayList of Lists, or null if no message is received.
+     */
+    private Object receiveObjectMessage(String protocol, Object performative) {
+        // Creating a message template to filter messages based on protocol and performative
+        MessageTemplate msgTemplate = MessageTemplate.and(MessageTemplate.MatchProtocol(protocol),
                 MessageTemplate.MatchPerformative((Integer) performative));
-        ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
-        ArrayList<List> paths = null;
-        if (msgReceived != null) {
+
+        // Receiving the message that fits the template
+        ACLMessage receivedMessage = this.myAgent.receive(msgTemplate);
+
+        // Variable to hold the paths received
+        ArrayList<List> receivedPaths = null;
+
+        // Checking if a message was received
+        if (receivedMessage != null) {
             try {
-                paths = (ArrayList<List>) msgReceived.getContentObject();
+                // Attempting to retrieve the object from the message
+                receivedPaths = (ArrayList<List>) receivedMessage.getContentObject();
             } catch (UnreadableException e) {
+                // Printing the stack trace in case of an exception
                 e.printStackTrace();
             }
-            return paths;
+            return receivedPaths;
         }
+        // Return null if no message is received
         return null;
     }
 
-    private void SendObjectMessage(ArrayList<String> Receivers, Object message, Object performative) {
-        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+    /**
+     * Sends an object message to multiple receivers using a specified performative.
+     *
+     * @param receivers    The list of receiver agent names.
+     * @param message      The object message content to be sent.
+     * @param performative The performative type of the message.
+     */
+    private void sendObjectMessage(ArrayList<String> receivers, Object message, Object performative) {
+        // Creating a new ACL message with a specified performative
+        ACLMessage msg = new ACLMessage((Integer) performative);
+        // Setting the protocol of the message
         msg.setProtocol("SHARE-PATH");
-        msg.setPerformative((Integer) performative);
+        // Setting the sender of the message
         msg.setSender(this.myAgent.getAID());
-        for (String agentName : Receivers) {
-            msg.addReceiver(new AID(agentName,AID.ISLOCALNAME));
+
+        // Adding each receiver to the message
+        for (String agentName : receivers) {
+            msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
         }
+
         try {
+            // Setting the object content of the message
             msg.setContentObject((Serializable) message);
         } catch (IOException e) {
+            // Throwing a runtime exception in case of an IOException
             throw new RuntimeException(e);
         }
 
-        ((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
+        // Sending the message through the agent's communication interface
+        ((AbstractDedaleAgent) this.myAgent).sendMessage(msg);
     }
+
 }
