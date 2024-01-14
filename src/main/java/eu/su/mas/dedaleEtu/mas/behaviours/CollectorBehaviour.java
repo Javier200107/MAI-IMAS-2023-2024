@@ -24,7 +24,7 @@ public class CollectorBehaviour extends TickerBehaviour {
     private HashMap<String, Integer> treasure_quantity = new HashMap<String, Integer>();
     private HashMap<String, String> treasure_types = new HashMap<String, String>();
 
-    private boolean is_working = false;
+    private boolean isWorking = false;
     private boolean backing_up = false;
     private int backoff_wait_t = 0;
     private int mission_step = 0;
@@ -32,10 +32,10 @@ public class CollectorBehaviour extends TickerBehaviour {
     private int conflict_counter = 0;
     private List<String> conflict_path = new ArrayList<>();
 
-    private boolean stop_for_help = false;
-    private int stop_patience = 0;
+    private boolean stopForHelp = false;
+    private int stopPatience = 0;
 
-    private List<String> planned_route = new ArrayList<>();
+    private List<String> plannedRoute = new ArrayList<>();
 
     public CollectorBehaviour(final AbstractDedaleAgent myagent) {
         super(myagent, TICKER_TIME);
@@ -43,8 +43,8 @@ public class CollectorBehaviour extends TickerBehaviour {
 
     private List<String> getRemainingRoute() {
         List<String> remaining = new ArrayList<String>();
-        for (int i = this.mission_step; i < this.planned_route.size(); i++) {
-            remaining.add(this.planned_route.get(i));
+        for (int i = this.mission_step; i < this.plannedRoute.size(); i++) {
+            remaining.add(this.plannedRoute.get(i));
         }
         return remaining;
     }
@@ -70,13 +70,13 @@ public class CollectorBehaviour extends TickerBehaviour {
      * @return The string representation of the next node if the move is successful, otherwise null.
      */
     private String moveToNextNode(List<Couple<Location, List<Couple<Observation, Integer>>>> observedLocations) {
-        if (planned_route == null || planned_route.isEmpty() || mission_step >= planned_route.size()) {
+        if (plannedRoute == null || plannedRoute.isEmpty() || mission_step >= plannedRoute.size()) {
             System.out.println(this.myAgent.getLocalName() + " - No valid mission route available.");
             resetMission();
             return null;
         }
 
-        String targetNodeString = planned_route.get(mission_step);
+        String targetNodeString = plannedRoute.get(mission_step);
         Location targetNode = findLocationFromString(observedLocations, targetNodeString);
 
         if (targetNode == null) {
@@ -92,7 +92,7 @@ public class CollectorBehaviour extends TickerBehaviour {
         }
 
         mission_step++;
-        if (mission_step == planned_route.size()) {
+        if (mission_step == plannedRoute.size()) {
             System.out.println(this.myAgent.getLocalName() + " -- Finished mission: Final node was a treasure.");
             resetMission();
         }
@@ -104,9 +104,9 @@ public class CollectorBehaviour extends TickerBehaviour {
      * Resets the mission-related variables.
      */
     private void resetMission() {
-        is_working = false;
+        isWorking = false;
         mission_step = 0;
-        planned_route = null;
+        plannedRoute = null;
     }
 
     /**
@@ -188,10 +188,10 @@ public class CollectorBehaviour extends TickerBehaviour {
                 mission = (List<String>) msgReceived.getContentObject();
                 System.out.println(this.myAgent.getLocalName() + " - Got a mission! Starting it..");
 
-                this.planned_route = mission;
-                this.stop_for_help = false;
-                this.stop_patience = 0;
-                this.is_working = true;
+                this.plannedRoute = mission;
+                this.stopForHelp = false;
+                this.stopPatience = 0;
+                this.isWorking = true;
 
             } catch (UnreadableException e) {
                 e.printStackTrace();
@@ -199,16 +199,19 @@ public class CollectorBehaviour extends TickerBehaviour {
         }
     }
 
-    private boolean GetStopMssg() {
-        MessageTemplate msgTemplate = MessageTemplate.and(MessageTemplate.MatchProtocol("STOP"),
+    private boolean checkForStopMessage() {
+        // Define a message template for the "STOP" protocol
+        MessageTemplate stopMessageTemplate = MessageTemplate.and(MessageTemplate.MatchProtocol("STOP"),
                 MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-        ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
+        ACLMessage receivedStopMessage = this.myAgent.receive(stopMessageTemplate);
 
-        if (msgReceived != null) {
-            this.stop_for_help = true;
-            this.stop_patience = 4;
+        // Check if a stop message was received
+        if (receivedStopMessage != null) {
+            this.stopForHelp = true;
+            this.stopPatience = 4;
             return true;
         }
+
         return false;
     }
 
@@ -306,7 +309,7 @@ public class CollectorBehaviour extends TickerBehaviour {
         }
 
         if (this.conflict_counter == 20) {
-            this.is_working = false;
+            this.isWorking = false;
             this.conflict_counter = 0;
             System.out.println(this.myAgent.getLocalName() + " - is blocked so abandoning its mission");
         }
@@ -326,7 +329,7 @@ public class CollectorBehaviour extends TickerBehaviour {
                 if (this.mission_step > 1) {
                     this.mission_step -= 1;
                 } else {
-                    this.planned_route.add(0, lobs.get(0).getLeft().toString());
+                    this.plannedRoute.add(0, lobs.get(0).getLeft().toString());
                 }
                 this.backoff_wait_t = 3;
                 System.out.println(this.myAgent.getLocalName() + " - I successfully backed off! Resuming mission now.");
@@ -350,14 +353,14 @@ public class CollectorBehaviour extends TickerBehaviour {
                 }
             }
         } else {
-            s_prev_node = this.planned_route.get(this.mission_step - 2);
+            s_prev_node = this.plannedRoute.get(this.mission_step - 2);
             moved = ((AbstractDedaleAgent) this.myAgent).moveTo(prev_node);
         }
 
         if (moved) {
             this.conflict_node = lobs.get(0).getLeft().toString();
             if (this.mission_step == 1) {
-                this.planned_route.add(0, s_prev_node);
+                this.plannedRoute.add(0, s_prev_node);
             } else {
                 this.mission_step -= 1;
             }
@@ -446,10 +449,10 @@ public class CollectorBehaviour extends TickerBehaviour {
             this.backoff_wait_t -= 1;
             return;
         }
-        if (this.stop_patience > 0) {
-            this.stop_patience -= 1;
-        } else if (this.stop_patience == 0) {
-            this.stop_for_help = false;
+        if (this.stopPatience > 0) {
+            this.stopPatience -= 1;
+        } else if (this.stopPatience == 0) {
+            this.stopForHelp = false;
         }
         Location myPosition = ((AbstractDedaleAgent) this.myAgent).getCurrentPosition();
         String current_position = myPosition.toString();
@@ -524,10 +527,10 @@ public class CollectorBehaviour extends TickerBehaviour {
             }
 
             String next_node = null;
-            if (!this.stop_for_help) {
+            if (!this.stopForHelp) {
                 if (this.backing_up) {
                     next_node = backOff(lobs);
-                } else if (this.is_working && !this.backing_up) {
+                } else if (this.isWorking && !this.backing_up) {
                     next_node = moveToNextNode(lobs);
                 } else {
                     next_node = selectRandomNode(lobs);
@@ -552,10 +555,10 @@ public class CollectorBehaviour extends TickerBehaviour {
             mergeTreasureInfo();
 
             updateAllPotentialTreasures();
-            if (!this.is_working) {
+            if (!this.isWorking) {
                 if (!this.potential_treasures.isEmpty()) {
                     askExplorerForHelp();
-                    if (GetStopMssg()) {
+                    if (checkForStopMessage()) {
                         sendTreasuresRequest(current_position);
                     }
                 }
