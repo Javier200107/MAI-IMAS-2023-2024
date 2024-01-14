@@ -20,17 +20,17 @@ public class CollectorBehaviour extends TickerBehaviour {
     private static final int BUFFER_SIZE = 8;
     private static final int TICKER_TIME = Utils.TICK_TIME;
     private List<String> node_Buffer = new ArrayList<>(BUFFER_SIZE);
-    private List<String> potential_treasures = new ArrayList<>();
+    private List<String> potentialTreasures = new ArrayList<>();
     private HashMap<String, Integer> treasure_quantity = new HashMap<String, Integer>();
     private HashMap<String, String> treasure_types = new HashMap<String, String>();
 
     private boolean isWorking = false;
-    private boolean backing_up = false;
+    private boolean backingUp = false;
     private int backoff_wait_t = 0;
     private int mission_step = 0;
     private String conflict_node = null;
-    private int conflict_counter = 0;
-    private List<String> conflict_path = new ArrayList<>();
+    private int conflictCounter = 0;
+    private List<String> conflictPath = new ArrayList<>();
 
     private boolean stopForHelp = false;
     private int stopPatience = 0;
@@ -60,7 +60,7 @@ public class CollectorBehaviour extends TickerBehaviour {
                 treasures.add(node.getKey());
             }
         }
-        this.potential_treasures = treasures;
+        this.potentialTreasures = treasures;
     }
 
     /**
@@ -87,7 +87,7 @@ public class CollectorBehaviour extends TickerBehaviour {
         }
 
         if (!moveAgentTo(targetNode)) {
-            solveDeadLock();
+            resolveDeadlock();
             return null;
         }
 
@@ -215,105 +215,137 @@ public class CollectorBehaviour extends TickerBehaviour {
         return false;
     }
 
-    private int getBlockingInfo() {
-        MessageTemplate msgTemplate = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
-        ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
-        int backup = 0;
-        // 0 = no action, 1 backup, -1 winning
+    private int analyzeBlockingSituation() {
+        // Listen for inform messages
+        MessageTemplate informMessageTemplate = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+        ACLMessage receivedMessage = this.myAgent.receive(informMessageTemplate);
 
-        if (msgReceived != null) {
-            String msg_id = msgReceived.getConversationId();
-            if (Objects.equals(msg_id, "Blocked")) {
-                List<String> agentPath;
+        // Define the backup status codes
+        final int NO_ACTION = 0;
+        final int BACKUP = 1;
+        final int WINNING = -1;
+        int backupStatus = NO_ACTION;
+
+        if (receivedMessage != null) {
+            String conversationId = receivedMessage.getConversationId();
+
+            // Process only "Blocked" messages
+            if ("Blocked".equals(conversationId)) {
                 try {
-                    agentPath = (List<String>) msgReceived.getContentObject();
-                    this.conflict_path = agentPath;
-                    int remaining_len = getRemainingRoute().size();
-                    // Agent with more nodes to follow is backing off
-                    if (remaining_len > agentPath.size()) {
-                        backup = 1;
-                        // If tied, compare their name strings
-                    } else if (remaining_len == agentPath.size()
-                            && this.myAgent.getLocalName().compareTo(msgReceived.getSender().getLocalName()) < 0) {
-                        backup = 1;
+                    List<String> senderPath = (List<String>) receivedMessage.getContentObject();
+                    this.conflictPath = senderPath;
+                    int remainingPathLength = getRemainingRoute().size();
+
+                    // Determine backup status based on path length and agent names
+                    if (remainingPathLength > senderPath.size()) {
+                        backupStatus = BACKUP;
+                    } else if (remainingPathLength == senderPath.size()
+                            && this.myAgent.getLocalName().compareTo(receivedMessage.getSender().getLocalName()) < 0) {
+                        backupStatus = BACKUP;
                     } else {
-                        backup = -1;
+                        backupStatus = WINNING;
                     }
                 } catch (UnreadableException e) {
                     e.printStackTrace();
                 }
             }
         }
-        return backup;
+        return backupStatus;
     }
 
-    private void sendTreasuresRequest(String current_node) {
-        List<String> receivers = new ArrayList<>(Arrays.asList("Explo1", "Explo2", "Explo3"));
-        List<String> request_nodes = new ArrayList<>(this.potential_treasures);
-        request_nodes.add(0, current_node);
+    private void dispatchTreasureLocationsRequest(String currentLocation) {
+        List<String> explorerAgents = Arrays.asList("Explo1", "Explo2", "Explo3");
+        List<String> treasureLocations = new ArrayList<>(this.potentialTreasures);
+        treasureLocations.add(0, currentLocation);
 
-        ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-        msg.setSender(this.myAgent.getAID());
-        for (String agentName : receivers) {
-            msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
+        ACLMessage treasureRequestMessage = new ACLMessage(ACLMessage.REQUEST);
+        treasureRequestMessage.setSender(this.myAgent.getAID());
+        treasureRequestMessage.setProtocol("SHARE-POINTS");
+
+        // Add explorer agents as message receivers
+        for (String agentName : explorerAgents) {
+            treasureRequestMessage.addReceiver(new AID(agentName, AID.ISLOCALNAME));
         }
 
+        // Set the content of the message
         try {
-            msg.setContentObject((Serializable) request_nodes);
+            treasureRequestMessage.setContentObject((Serializable) treasureLocations);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        msg.setProtocol("SHARE-POINTS");
-        ((AbstractDedaleAgent) this.myAgent).sendMessage(msg);
+
+        // Send the message
+        ((AbstractDedaleAgent) this.myAgent).sendMessage(treasureRequestMessage);
     }
 
-    private void askExplorerForHelp() {
-        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-        msg.setSender(this.myAgent.getAID());
-        List<String> receivers = new ArrayList<>(Arrays.asList("Explo1", "Explo2", "Explo3"));
-        for (String agentName : receivers) {
-            msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
+    private void requestAssistanceFromExplorers() {
+        // Create a new INFORM message
+        ACLMessage helpRequestMessage = new ACLMessage(ACLMessage.INFORM);
+        helpRequestMessage.setSender(this.myAgent.getAID());
+        helpRequestMessage.setProtocol("HELLO");
+        helpRequestMessage.setContent("NeedHelp");
+
+        // Define the list of explorer agents to receive the message
+        List<String> explorerAgents = Arrays.asList("Explo1", "Explo2", "Explo3");
+        for (String agentName : explorerAgents) {
+            helpRequestMessage.addReceiver(new AID(agentName, AID.ISLOCALNAME));
         }
-        msg.setContent("NeedHelp");
-        msg.setProtocol("HELLO");
-        ((AbstractDedaleAgent) this.myAgent).sendMessage(msg);
 
+        // Send the message
+        ((AbstractDedaleAgent) this.myAgent).sendMessage(helpRequestMessage);
     }
 
-    private void sendBlockingInfo() {
-        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-        msg.setSender(this.myAgent.getAID());
-        List<String> receivers = new ArrayList<>(Arrays.asList("Tanker1", "Tanker2", "Collect1", "Collect2", "Collect3",
-                "Collect4", "Explo1", "Explo2", "Explo3"));
+    private void broadcastBlockingInformation() {
+        // Create a new INFORM message
+        ACLMessage blockingInfoMessage = new ACLMessage(ACLMessage.INFORM);
+        blockingInfoMessage.setSender(this.myAgent.getAID());
+        blockingInfoMessage.setConversationId("Blocked");
+
+        // List of all potential receiver agents
+        List<String> allReceivers = Arrays.asList("Tanker1", "Tanker2", "Collect1", "Collect2", "Collect3", "Collect4",
+                "Explo1", "Explo2", "Explo3");
+
+        // Remove the current agent from the receivers list
+        List<String> receivers = new ArrayList<>(allReceivers);
         receivers.remove(this.myAgent.getLocalName());
+
+        // Add each receiver to the message
         for (String agentName : receivers) {
-            msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
+            blockingInfoMessage.addReceiver(new AID(agentName, AID.ISLOCALNAME));
         }
+
+        // Set the content of the message
         try {
-            msg.setContentObject((Serializable) getRemainingRoute());
+            blockingInfoMessage.setContentObject((Serializable) getRemainingRoute());
         } catch (IOException e) {
             e.printStackTrace();
         }
-        msg.setConversationId("Blocked");
-        ((AbstractDedaleAgent) this.myAgent).sendMessage(msg);
+
+        // Send the message
+        ((AbstractDedaleAgent) this.myAgent).sendMessage(blockingInfoMessage);
     }
 
-    private void solveDeadLock() {
-        sendBlockingInfo();
-        int backup = getBlockingInfo();
-        if (backup == 1) {
-            this.backing_up = true;
-        } else if (backup == -1) {
+    private void resolveDeadlock() {
+        // Broadcast current blocking situation
+        broadcastBlockingInformation();
+
+        // Analyze the deadlock situation and determine the course of action
+        int actionRequired = analyzeBlockingSituation();
+        if (actionRequired == 1) {
+            this.backingUp = true;
+        } else if (actionRequired == -1) {
+            // Handle the winning situation (no specific action here)
         } else {
-            this.conflict_counter += 1;
+            // Increment conflict counter in case of a stalemate
+            this.conflictCounter += 1;
         }
 
-        if (this.conflict_counter == 20) {
+        // Check if the deadlock has persisted for too long
+        if (this.conflictCounter == 20) {
             this.isWorking = false;
-            this.conflict_counter = 0;
-            System.out.println(this.myAgent.getLocalName() + " - is blocked so abandoning its mission");
+            this.conflictCounter = 0;
+            System.out.println(this.myAgent.getLocalName() + " - agent blocked");
         }
-        return;
     }
 
     private String backOff(List<Couple<Location, List<Couple<Observation, Integer>>>> lobs) {
@@ -321,10 +353,10 @@ public class CollectorBehaviour extends TickerBehaviour {
         for (int i = 1; i < lobs.size(); i++) {
             Location node = lobs.get(i).getLeft();
             String s_node = node.toString();
-            if (!this.conflict_path.contains(s_node) && !Objects.equals(s_node, this.conflict_node)
+            if (!this.conflictPath.contains(s_node) && !Objects.equals(s_node, this.conflict_node)
                     && (((AbstractDedaleAgent) this.myAgent).moveTo(node))) {
-                this.conflict_counter = 0;
-                this.backing_up = false;
+                this.conflictCounter = 0;
+                this.backingUp = false;
                 this.conflict_node = null;
                 if (this.mission_step > 1) {
                     this.mission_step -= 1;
@@ -332,7 +364,7 @@ public class CollectorBehaviour extends TickerBehaviour {
                     this.plannedRoute.add(0, lobs.get(0).getLeft().toString());
                 }
                 this.backoff_wait_t = 3;
-                System.out.println(this.myAgent.getLocalName() + " - I successfully backed off! Resuming mission now.");
+                System.out.println(this.myAgent.getLocalName() + " - backed off.");
                 return s_node;
             }
         }
@@ -528,9 +560,9 @@ public class CollectorBehaviour extends TickerBehaviour {
 
             String next_node = null;
             if (!this.stopForHelp) {
-                if (this.backing_up) {
+                if (this.backingUp) {
                     next_node = backOff(lobs);
-                } else if (this.isWorking && !this.backing_up) {
+                } else if (this.isWorking && !this.backingUp) {
                     next_node = moveToNextNode(lobs);
                 } else {
                     next_node = selectRandomNode(lobs);
@@ -538,7 +570,7 @@ public class CollectorBehaviour extends TickerBehaviour {
             }
 
             if (next_node != null) {
-                this.conflict_counter = 0;
+                this.conflictCounter = 0;
                 current_position = next_node;
             }
 
@@ -556,10 +588,10 @@ public class CollectorBehaviour extends TickerBehaviour {
 
             updateAllPotentialTreasures();
             if (!this.isWorking) {
-                if (!this.potential_treasures.isEmpty()) {
-                    askExplorerForHelp();
+                if (!this.potentialTreasures.isEmpty()) {
+                    requestAssistanceFromExplorers();
                     if (checkForStopMessage()) {
-                        sendTreasuresRequest(current_position);
+                        dispatchTreasureLocationsRequest(current_position);
                     }
                 }
                 receiveMission();
