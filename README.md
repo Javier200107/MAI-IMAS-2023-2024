@@ -2,6 +2,8 @@
 ![Alt text](img/deim-bandera-color-01.png)
 
 ## Authors
+This project was developed by the following students of the Introduction to Multi-Agent Systems course at URV (alphabetic order):
+
 - [Becerra, Alberto](https://github.com/BecTome)
 - [Bercowsky, Andrés](https://github.com/bercowsky)
 - [Campàs, Carla](https://github.com/carlacampas)
@@ -21,6 +23,7 @@ This project involves creating a multi-agent system (MAS) to simulate a treasure
     - [Treasure Types](#treasure-types)
     - [Map](#map)
   - [Results](#results)
+  - [References](#references)
 
 
 ## Practice Description
@@ -93,3 +96,20 @@ The original map has been revised and modified so that the agents couldn't get s
 ## Results
 
 The project implemented an Intelligent Multi-Agent System for a treasure hunt challenge, using agents to gather treasures on a map. It tackled inefficiencies of random movement with a mission-request system, path planning, and buffer mechanisms to avoid revisits. Communication challenges were resolved using specific Jade protocols, while collectors' path conflicts were managed through a back-off strategy. Communication range experimentation revealed a trade-off between coordination and performance, with a need for balanced communication strategies. Though the project was simplified, it highlighted the importance of efficiency and adaptability in multi-agent systems.
+
+## References
+
+- [Dedale](https://dedale.gitlab.io/dedale/)
+- [JADE](https://jade.tilab.com/)
+- [OpenStreetMap](https://www.openstreetmap.org/#map=5/38.007/0.000)
+- Glavic, Mevludin (2006). Agents and Multi-Agent Systems: A Short Introduction for Power
+Engineers. Retrieved 17:36, October 16, 2020, from https://people.montefiore.uliege.
+be/glavic/MAS-Intro_Tech_report.pdf.
+- Rocha, Jorge (2017, 28 June). Introductory Chapter: Multi-Agent Systems. Retrieved
+21:05, October 16, 2020, from https://www.intechopen.com/books/multi-agent-systems/
+introductory-chapter-multi-agent-systems.
+- Boissier, Olivier. An Introduction to Multi-Agent Systems. Retrieved 20:05,
+October 16, 2020, from https://www.intechopen.com/books/multi-agent-systems/
+introductory-chapter-multi-agent-systems.
+36
+- Wooldridge, Michael. An Introduction to MultiAgent Systems.
