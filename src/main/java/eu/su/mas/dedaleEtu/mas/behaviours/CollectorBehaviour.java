@@ -19,23 +19,20 @@ public class CollectorBehaviour extends TickerBehaviour {
     private static final long serialVersionUID = 9088209402507795289L;
     private static final int BUFFER_SIZE = 8;
     private static final int TICKER_TIME = Utils.TICK_TIME;
-    private List<String> node_Buffer = new ArrayList<>(BUFFER_SIZE);
-    private List<String> potentialTreasures = new ArrayList<>();
-    private HashMap<String, Integer> treasure_quantity = new HashMap<String, Integer>();
-    private HashMap<String, String> treasure_types = new HashMap<String, String>();
-
-    private boolean isWorking = false;
+    private List<String> prevNodes = new ArrayList<>(BUFFER_SIZE);
+    private HashMap<String, String> treasureTypes = new HashMap<String, String>();
     private boolean backingUp = false;
-    private int backoff_wait_t = 0;
-    private int mission_step = 0;
-    private String conflict_node = null;
-    private int conflictCounter = 0;
-    private List<String> conflictPath = new ArrayList<>();
-
-    private boolean stopForHelp = false;
+    private HashMap<String, Integer> treasureQuantity = new HashMap<String, Integer>();
+    private int backoffWaitTime = 0;
+    private List<String> potentialTreasures = new ArrayList<>();
+    private String conflictLocation = null;
+    private boolean isWorking = false;
+    private int missionStep = 0;
     private int stopPatience = 0;
-
+    private boolean stopForHelp = false;
     private List<String> plannedRoute = new ArrayList<>();
+    private List<String> conflictPath = new ArrayList<>();
+    private int conflictCounter = 0;
 
     public CollectorBehaviour(final AbstractDedaleAgent myagent) {
         super(myagent, TICKER_TIME);
@@ -43,7 +40,7 @@ public class CollectorBehaviour extends TickerBehaviour {
 
     private List<String> getRemainingRoute() {
         List<String> remaining = new ArrayList<String>();
-        for (int i = this.mission_step; i < this.plannedRoute.size(); i++) {
+        for (int i = this.missionStep; i < this.plannedRoute.size(); i++) {
             remaining.add(this.plannedRoute.get(i));
         }
         return remaining;
@@ -54,9 +51,9 @@ public class CollectorBehaviour extends TickerBehaviour {
      */
     private void updateAllPotentialTreasures() {
         List<String> treasures = new ArrayList<>();
-        for (HashMap.Entry<String, String> node : this.treasure_types.entrySet()) {
+        for (HashMap.Entry<String, String> node : this.treasureTypes.entrySet()) {
             if (((AbstractDedaleAgent) this.myAgent).getMyTreasureType().toString() == node.getValue()
-                    && this.treasure_quantity.get(node.getKey()) > 0) {
+                    && this.treasureQuantity.get(node.getKey()) > 0) {
                 treasures.add(node.getKey());
             }
         }
@@ -70,18 +67,17 @@ public class CollectorBehaviour extends TickerBehaviour {
      * @return The string representation of the next node if the move is successful, otherwise null.
      */
     private String moveToNextNode(List<Couple<Location, List<Couple<Observation, Integer>>>> observedLocations) {
-        if (plannedRoute == null || plannedRoute.isEmpty() || mission_step >= plannedRoute.size()) {
-            System.out.println(this.myAgent.getLocalName() + " - No valid mission route available.");
+        if (plannedRoute == null || plannedRoute.isEmpty() || missionStep >= plannedRoute.size()) {
+            System.out.println(this.myAgent.getLocalName() + " - No goal.");
             resetMission();
             return null;
         }
 
-        String targetNodeString = plannedRoute.get(mission_step);
+        String targetNodeString = plannedRoute.get(missionStep);
         Location targetNode = findLocationFromString(observedLocations, targetNodeString);
 
         if (targetNode == null) {
-            System.out.println(
-                    this.myAgent.getLocalName() + " - Following node from mission is not valid. Aborting mission.");
+            System.out.println(this.myAgent.getLocalName() + " - Invalid goal. Abort.");
             resetMission();
             return null;
         }
@@ -91,9 +87,9 @@ public class CollectorBehaviour extends TickerBehaviour {
             return null;
         }
 
-        mission_step++;
-        if (mission_step == plannedRoute.size()) {
-            System.out.println(this.myAgent.getLocalName() + " -- Finished mission: Final node was a treasure.");
+        missionStep++;
+        if (missionStep == plannedRoute.size()) {
+            System.out.println(this.myAgent.getLocalName() + " -- Completed goal.");
             resetMission();
         }
 
@@ -105,7 +101,7 @@ public class CollectorBehaviour extends TickerBehaviour {
      */
     private void resetMission() {
         isWorking = false;
-        mission_step = 0;
+        missionStep = 0;
         plannedRoute = null;
     }
 
@@ -150,12 +146,12 @@ public class CollectorBehaviour extends TickerBehaviour {
         String targetLocationString = selectedLocationString;
 
         // If the selected location is already in the node buffer, find an alternative
-        if (this.node_Buffer.contains(selectedLocationString)) {
+        if (this.prevNodes.contains(selectedLocationString)) {
             for (int i = 0; i < locationObservations.size(); i++) {
                 Location alternativeLocation = locationObservations.get(i).getLeft();
                 String alternativeLocationString = alternativeLocation.toString();
 
-                if (!this.node_Buffer.contains(alternativeLocationString)) {
+                if (!this.prevNodes.contains(alternativeLocationString)) {
                     targetLocation = alternativeLocation;
                     targetLocationString = alternativeLocationString;
                     break;
@@ -170,7 +166,7 @@ public class CollectorBehaviour extends TickerBehaviour {
             targetLocation = locationObservations.get(attempt).getLeft();
             hasMoved = ((AbstractDedaleAgent) this.myAgent).moveTo(targetLocation);
             attempt++;
-            this.node_Buffer.clear();
+            this.prevNodes.clear();
         }
 
         // Return null if unable to move; otherwise, return the string representation of the target location
@@ -186,7 +182,7 @@ public class CollectorBehaviour extends TickerBehaviour {
             List<String> mission;
             try {
                 mission = (List<String>) msgReceived.getContentObject();
-                System.out.println(this.myAgent.getLocalName() + " - Got a mission! Starting it..");
+                System.out.println(this.myAgent.getLocalName() + " - Start goal.");
 
                 this.plannedRoute = mission;
                 this.stopForHelp = false;
@@ -348,146 +344,176 @@ public class CollectorBehaviour extends TickerBehaviour {
         }
     }
 
-    private String backOff(List<Couple<Location, List<Couple<Observation, Integer>>>> lobs) {
+    private String retreatFromConflict(List<Couple<Location, List<Couple<Observation, Integer>>>> observedLocations) {
+        // Attempt to move to a non-conflicting location
+        for (int i = 1; i < observedLocations.size(); i++) {
+            Location alternativeLocation = observedLocations.get(i).getLeft();
+            String locationString = alternativeLocation.toString();
+            if (!this.conflictPath.contains(locationString) && !Objects.equals(locationString, this.conflictLocation)
+                    && ((AbstractDedaleAgent) this.myAgent).moveTo(alternativeLocation)) {
 
-        for (int i = 1; i < lobs.size(); i++) {
-            Location node = lobs.get(i).getLeft();
-            String s_node = node.toString();
-            if (!this.conflictPath.contains(s_node) && !Objects.equals(s_node, this.conflict_node)
-                    && (((AbstractDedaleAgent) this.myAgent).moveTo(node))) {
-                this.conflictCounter = 0;
-                this.backingUp = false;
-                this.conflict_node = null;
-                if (this.mission_step > 1) {
-                    this.mission_step -= 1;
-                } else {
-                    this.plannedRoute.add(0, lobs.get(0).getLeft().toString());
-                }
-                this.backoff_wait_t = 3;
-                System.out.println(this.myAgent.getLocalName() + " - backed off.");
-                return s_node;
+                resetConflictStatus();
+                updateMissionAfterRetreat(observedLocations, i);
+                System.out.println(this.myAgent.getLocalName() + " - Restart goal.");
+                return locationString;
             }
         }
 
-        String s_prev_node = null;
-        Location prev_node = null;
-        boolean moved = false;
+        // Backup plan: either move back along the planned route or to a new location
+        return handleNoImmediateRetreatOption(observedLocations);
+    }
 
-        if (this.mission_step == 1) {
-            for (int j = 1; j < lobs.size(); j++) {
-                Location node = lobs.get(j).getLeft();
-                String s_node = node.toString();
-                if (((AbstractDedaleAgent) this.myAgent).moveTo(node)) {
-                    prev_node = node;
-                    s_prev_node = s_node;
-                    moved = true;
+    private void resetConflictStatus() {
+        this.conflictCounter = 0;
+        this.backingUp = false;
+        this.conflictLocation = null;
+        this.backoffWaitTime = 3;
+    }
+
+    private void updateMissionAfterRetreat(List<Couple<Location, List<Couple<Observation, Integer>>>> observedLocations,
+            int retreatIndex) {
+        if (this.missionStep > 1) {
+            this.missionStep -= 1;
+        } else {
+            this.plannedRoute.add(0, observedLocations.get(0).getLeft().toString());
+        }
+    }
+
+    private String handleNoImmediateRetreatOption(
+            List<Couple<Location, List<Couple<Observation, Integer>>>> observedLocations) {
+        Location previousLocation = null;
+        String previousLocationString = null;
+        boolean hasMoved = false;
+
+        if (this.missionStep == 1) {
+            // Try moving to a different location
+            for (int j = 1; j < observedLocations.size(); j++) {
+                Location location = observedLocations.get(j).getLeft();
+                String locationString = location.toString();
+                if (((AbstractDedaleAgent) this.myAgent).moveTo(location)) {
+                    previousLocation = location;
+                    previousLocationString = locationString;
+                    hasMoved = true;
                     break;
                 }
             }
         } else {
-            s_prev_node = this.plannedRoute.get(this.mission_step - 2);
-            moved = ((AbstractDedaleAgent) this.myAgent).moveTo(prev_node);
+            // Move back along the planned route
+            previousLocationString = this.plannedRoute.get(this.missionStep - 2);
+            hasMoved = ((AbstractDedaleAgent) this.myAgent).moveTo(previousLocation);
         }
 
-        if (moved) {
-            this.conflict_node = lobs.get(0).getLeft().toString();
-            if (this.mission_step == 1) {
-                this.plannedRoute.add(0, s_prev_node);
-            } else {
-                this.mission_step -= 1;
-            }
+        if (hasMoved) {
+            handleSuccessfulMove(observedLocations, previousLocationString);
         }
-        return s_prev_node;
+        return previousLocationString;
     }
 
-    private void shareTreasureInfo() {
-        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-        msg.setSender(this.myAgent.getAID());
-        List<String> receivers = new ArrayList<>(
+    private void handleSuccessfulMove(List<Couple<Location, List<Couple<Observation, Integer>>>> observedLocations,
+            String locationString) {
+        this.conflictLocation = observedLocations.get(0).getLeft().toString();
+        if (this.missionStep == 1) {
+            this.plannedRoute.add(0, locationString);
+        } else {
+            this.missionStep -= 1;
+        }
+    }
+
+    private void distributeTreasureInformation() {
+        // Convert array to a modifiable list
+        List<String> treasureInfoReceivers = new ArrayList<>(
                 Arrays.asList("Tanker1", "Tanker2", "Collect1", "Collect2", "Collect3", "Collect4"));
-        receivers.remove(this.myAgent.getLocalName());
-        for (String agentName : receivers) {
-            msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
-        }
-        try {
-            msg.setContentObject(this.treasure_types);
-            msg.setConversationId("Type");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        ((AbstractDedaleAgent) this.myAgent).sendMessage(msg);
-        try {
-            msg.setContentObject(this.treasure_quantity);
-            msg.setConversationId("Quant");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        ((AbstractDedaleAgent) this.myAgent).sendMessage(msg);
+
+        // Remove the current agent's name from the list
+        treasureInfoReceivers.remove(this.myAgent.getLocalName());
+
+        // Share treasure types information
+        shareSpecificTreasureInfo(treasureInfoReceivers, this.treasureTypes, "Type");
+
+        // Share treasure quantity information
+        shareSpecificTreasureInfo(treasureInfoReceivers, this.treasureQuantity, "Quant");
     }
 
-    private void mergeTreasureInfo() {
-        MessageTemplate msgTemplate = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
-        ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
+    private void shareSpecificTreasureInfo(List<String> receivers, Serializable treasureInfo, String conversationId) {
+        ACLMessage treasureInfoMessage = new ACLMessage(ACLMessage.INFORM);
+        treasureInfoMessage.setSender(this.myAgent.getAID());
+        treasureInfoMessage.setConversationId(conversationId);
 
-        if (msgReceived != null) {
+        // Add receivers to the message
+        for (String agentName : receivers) {
+            treasureInfoMessage.addReceiver(new AID(agentName, AID.ISLOCALNAME));
+        }
+
+        // Set the content of the message
+        try {
+            treasureInfoMessage.setContentObject(treasureInfo);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Send the message
+        ((AbstractDedaleAgent) this.myAgent).sendMessage(treasureInfoMessage);
+    }
+
+    private void integrateTreasureInformation() {
+        MessageTemplate informMessageTemplate = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+        ACLMessage receivedMessage = this.myAgent.receive(informMessageTemplate);
+
+        if (receivedMessage != null) {
+            String messageId = receivedMessage.getConversationId();
             boolean updated = false;
-            String msg_id = msgReceived.getConversationId();
-            if (Objects.equals(msg_id, "Type")) {
-                HashMap<String, String> treasureType;
-                try {
-                    treasureType = (HashMap<String, String>) msgReceived.getContentObject();
 
-                    for (HashMap.Entry<String, String> set : treasureType.entrySet()) {
-                        if (!this.treasure_types.containsKey(set.getKey())) {
-                            this.treasure_types.put(set.getKey(), set.getValue());
-                            updated = true;
-                        }
-                    }
-
-                } catch (UnreadableException e) {
-                    e.printStackTrace();
-                }
-
-            } else if (msg_id == "Quant") {
-                HashMap<String, Integer> treasureQuant;
-
-                try {
-                    treasureQuant = (HashMap<String, Integer>) msgReceived.getContentObject();
-
-                    for (HashMap.Entry<String, Integer> set : treasureQuant.entrySet()) {
-
-                        if (!this.treasure_quantity.containsKey(set.getKey())) {
-                            this.treasure_quantity.put(set.getKey(), set.getValue());
-                            updated = true;
-
-                        } else if (this.treasure_quantity.get(set.getKey()) > set.getValue()) {
-                            this.treasure_quantity.put(set.getKey(), set.getValue());
-                            updated = true;
-                        }
-                    }
-
-                } catch (UnreadableException e) {
-                    e.printStackTrace();
-                }
+            if ("Type".equals(messageId)) {
+                updated = updateTreasureTypes(receivedMessage);
+            } else if ("Quant".equals(messageId)) {
+                updated = updateTreasureQuantities(receivedMessage);
             }
+
+            // Perform additional actions if the information was updated
             if (updated) {
+                // Actions to perform when new information is integrated
             }
         }
+    }
+
+    private boolean updateTreasureTypes(ACLMessage message) {
+        try {
+            HashMap<String, String> receivedTreasureTypes = (HashMap<String, String>) message.getContentObject();
+            for (Map.Entry<String, String> entry : receivedTreasureTypes.entrySet()) {
+                if (!this.treasureTypes.containsKey(entry.getKey())) {
+                    this.treasureTypes.put(entry.getKey(), entry.getValue());
+                    return true;
+                }
+            }
+        } catch (UnreadableException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private boolean updateTreasureQuantities(ACLMessage message) {
+        try {
+            HashMap<String, Integer> receivedTreasureQuantities = (HashMap<String, Integer>) message.getContentObject();
+            for (Map.Entry<String, Integer> entry : receivedTreasureQuantities.entrySet()) {
+                Integer currentQuantity = this.treasureQuantity.get(entry.getKey());
+                if (currentQuantity == null || currentQuantity > entry.getValue()) {
+                    this.treasureQuantity.put(entry.getKey(), entry.getValue());
+                    return true;
+                }
+            }
+        } catch (UnreadableException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     @Override
     public void onTick() {
-        if (this.backoff_wait_t > 0) {
-            this.backoff_wait_t -= 1;
-            return;
-        }
-        if (this.stopPatience > 0) {
-            this.stopPatience -= 1;
-        } else if (this.stopPatience == 0) {
-            this.stopForHelp = false;
-        }
+
+        checkBackoff();
+
         Location myPosition = ((AbstractDedaleAgent) this.myAgent).getCurrentPosition();
-        String current_position = myPosition.toString();
+        String thisPosition = myPosition.toString();
 
         String s_myPosition = myPosition.toString();
 
@@ -497,105 +523,137 @@ public class CollectorBehaviour extends TickerBehaviour {
 
             List<Couple<Observation, Integer>> lObservations = lobs.get(0).getRight();
 
-            for (Couple<Observation, Integer> o : lObservations) {
-                switch (o.getLeft()) {
-                case DIAMOND:
-                case GOLD:
+            updateTreasureInformation(lObservations, s_myPosition, myPosition.toString());
 
-                    if (o.getLeft() == ((AbstractDedaleAgent) this.myAgent).getMyTreasureType()) {
-                        boolean unlock = ((AbstractDedaleAgent) this.myAgent).openLock(o.getLeft());
-                        if (unlock) {
-                        }
-                    }
+            emptyMyBackPack();
 
-                    int picked = ((AbstractDedaleAgent) this.myAgent).pick();
-                    if (picked > 0) {
-                        System.out.println(this.myAgent.getLocalName() + " - Agent picked: " + picked + " of "
-                                + o.getLeft() + " at position " + myPosition);
-                    }
+            updateAllPotentialTreasures(lobs, thisPosition);
 
-                    if (!this.treasure_quantity.containsKey(s_myPosition)) {
-                        this.treasure_quantity.put(s_myPosition, o.getRight() - picked);
-                        this.treasure_types.put(s_myPosition, o.getLeft().toString());
-                    } else {
-                        if (this.treasure_quantity.get(s_myPosition) != o.getRight() - picked) {
-                            this.treasure_quantity.put(s_myPosition, o.getRight() - picked);
-                        }
-                    }
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            List<Couple<Observation, Integer>> backpack_before = ((AbstractDedaleAgent) this.myAgent)
-                    .getBackPackFreeSpace();
-
-            // Random choice of the Tanker to contact is implemented. It can be improved if the Tankers inform the
-            // Collectors of their position or their free space. However, the latter one makes the system slower
-
-            List<String> tankers = Arrays.asList("Tanker1", "Tanker2");
-            Collections.shuffle(tankers); // Randomly shuffle the list
-
-            boolean contacted = false;
-            for (String tanker : tankers) {
-                contacted = ((AbstractDedaleAgent) this.myAgent).emptyMyBackPack(tanker);
-                if (contacted) {
-                    break;
-                }
-            }
-
-            List<Couple<Observation, Integer>> backpack_after = ((AbstractDedaleAgent) this.myAgent)
-                    .getBackPackFreeSpace();
-            boolean delivered = false;
-            for (int i = 0; i < backpack_after.size(); i++) {
-                if (backpack_after.get(i).getRight() > backpack_before.get(i).getRight()) {
-                    delivered = true;
-                }
-            }
-            if (delivered && contacted) {
-                System.out.println(this.myAgent.getLocalName() + " - The agent delivered his treasure. Backpack at "
-                        + ((AbstractDedaleAgent) this.myAgent).getBackPackFreeSpace() + " of capacity");
-            }
-
-            String next_node = null;
-            if (!this.stopForHelp) {
-                if (this.backingUp) {
-                    next_node = backOff(lobs);
-                } else if (this.isWorking && !this.backingUp) {
-                    next_node = moveToNextNode(lobs);
-                } else {
-                    next_node = selectRandomNode(lobs);
-                }
-            }
-
-            if (next_node != null) {
-                this.conflictCounter = 0;
-                current_position = next_node;
-            }
-
-            if (next_node != null && !this.node_Buffer.contains(next_node)) {
-
-                if (this.node_Buffer.size() == this.BUFFER_SIZE) {
-                    this.node_Buffer.remove(0);
-                }
-
-                this.node_Buffer.add(next_node);
-            }
-
-            shareTreasureInfo();
-            mergeTreasureInfo();
+            distributeTreasureInformation();
+            integrateTreasureInformation();
 
             updateAllPotentialTreasures();
-            if (!this.isWorking) {
-                if (!this.potentialTreasures.isEmpty()) {
-                    requestAssistanceFromExplorers();
-                    if (checkForStopMessage()) {
-                        dispatchTreasureLocationsRequest(current_position);
+
+            checkForMissionRequest(thisPosition);
+
+        }
+    }
+
+    private void updateTreasureInformation(List<Couple<Observation, Integer>> lObservations, String s_myPosition,
+            String myPosition) {
+        for (Couple<Observation, Integer> o : lObservations) {
+            switch (o.getLeft()) {
+            case DIAMOND:
+            case GOLD:
+
+                if (o.getLeft() == ((AbstractDedaleAgent) this.myAgent).getMyTreasureType()) {
+                    boolean unlock = ((AbstractDedaleAgent) this.myAgent).openLock(o.getLeft());
+                    if (unlock) {
                     }
                 }
-                receiveMission();
+
+                int picked = ((AbstractDedaleAgent) this.myAgent).pick();
+                if (picked > 0) {
+                    System.out.println(this.myAgent.getLocalName() + " - Pick: " + picked + " on " + o.getLeft()
+                            + ". Position= " + myPosition);
+                }
+
+                if (!this.treasureQuantity.containsKey(s_myPosition)) {
+                    this.treasureQuantity.put(s_myPosition, o.getRight() - picked);
+                    this.treasureTypes.put(s_myPosition, o.getLeft().toString());
+                } else {
+                    if (this.treasureQuantity.get(s_myPosition) != o.getRight() - picked) {
+                        this.treasureQuantity.put(s_myPosition, o.getRight() - picked);
+                    }
+                }
+                break;
+            default:
+                break;
             }
         }
     }
+
+    private void emptyMyBackPack() {
+        List<Couple<Observation, Integer>> backpack_before = ((AbstractDedaleAgent) this.myAgent)
+                .getBackPackFreeSpace();
+
+        // Random choice of the Tanker to contact is implemented. It can be improved if the Tankers inform the
+        // Collectors of their position or their free space. However, the latter one makes the system slower
+
+        List<String> tankers = Arrays.asList("Tanker1", "Tanker2");
+        Collections.shuffle(tankers); // Randomly shuffle the list
+
+        boolean contacted = false;
+        for (String tanker : tankers) {
+            contacted = ((AbstractDedaleAgent) this.myAgent).emptyMyBackPack(tanker);
+            if (contacted) {
+                break;
+            }
+        }
+
+        List<Couple<Observation, Integer>> backpack_after = ((AbstractDedaleAgent) this.myAgent).getBackPackFreeSpace();
+        boolean delivered = false;
+        for (int i = 0; i < backpack_after.size(); i++) {
+            if (backpack_after.get(i).getRight() > backpack_before.get(i).getRight()) {
+                delivered = true;
+            }
+        }
+        if (delivered && contacted) {
+            System.out.println(this.myAgent.getLocalName() + " - Agent deliverd. Backpack after: "
+                    + ((AbstractDedaleAgent) this.myAgent).getBackPackFreeSpace() + " of capacity");
+        }
+    }
+
+    private void updateAllPotentialTreasures(List<Couple<Location, List<Couple<Observation, Integer>>>> lobs,
+            String thisPosition) {
+        String next_node = null;
+        if (!this.stopForHelp) {
+            if (this.backingUp) {
+                next_node = retreatFromConflict(lobs);
+            } else if (this.isWorking && !this.backingUp) {
+                next_node = moveToNextNode(lobs);
+            } else {
+                next_node = selectRandomNode(lobs);
+            }
+        }
+
+        if (next_node != null) {
+            this.conflictCounter = 0;
+            thisPosition = next_node;
+        }
+
+        if (next_node != null && !this.prevNodes.contains(next_node)) {
+
+            if (this.prevNodes.size() == this.BUFFER_SIZE) {
+                this.prevNodes.remove(0);
+            }
+
+            this.prevNodes.add(next_node);
+        }
+    }
+
+    private void checkForMissionRequest(String thisPosition) {
+        if (!this.isWorking) {
+            if (!this.potentialTreasures.isEmpty()) {
+                requestAssistanceFromExplorers();
+                if (checkForStopMessage()) {
+                    dispatchTreasureLocationsRequest(thisPosition);
+                }
+            }
+            receiveMission();
+        }
+    }
+
+    private void checkBackoff() {
+        if (this.backoffWaitTime > 0) {
+            this.backoffWaitTime -= 1;
+            return;
+        }
+        if (this.stopPatience > 0) {
+            this.stopPatience -= 1;
+        } else if (this.stopPatience == 0) {
+            this.stopForHelp = false;
+        }
+    }
+
 }
