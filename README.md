@@ -1,9 +1,18 @@
 # IMAS Practical Work: Treasure Hunt Simulation
+![Alt text](img/deim-bandera-color-01.png)
+
+## Authors
+- [Becerra, Alberto](https://github.com/BecTome)
+- [Bercowsky, Andrés](https://github.com/bercowsky)
+- [Campàs, Carla](https://github.com/carlacampas)
+- [González-Béjar, Javier](https://github.com/Javier200107)
+- [Monfort, Marc](https://github.com/marcmonfort)
 
 ## Overview
 This project involves creating a multi-agent system (MAS) to simulate a treasure hunt scenario. It utilizes Dedale, a JADE-based agent environment framework. The core objective is to implement basic agent technology concepts and coordinate agents to optimize treasure collection on a generated map.
 
 - [IMAS Practical Work: Treasure Hunt Simulation](#imas-practical-work-treasure-hunt-simulation)
+  - [Authors](#authors)
   - [Overview](#overview)
   - [Practice Description](#practice-description)
   - [Setup and Execution](#setup-and-execution)
@@ -31,7 +40,7 @@ Run the following commands to clean, install and run the code:
 mvn clean install exec:java
 ```
 
-Note: In `pom.xml`, profiles can be configured to run different scenarios.
+**Note**: In `pom.xml`, profiles can be configured to run different scenarios.
 
 ## Specific Implementation
 
