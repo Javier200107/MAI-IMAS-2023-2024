@@ -31,6 +31,8 @@ Run the following commands to clean, install and run the code:
 mvn clean install exec:java
 ```
 
+Note: In `pom.xml`, profiles can be configured to run different scenarios.
+
 ## Specific Implementation
 
 ### Agent Types
