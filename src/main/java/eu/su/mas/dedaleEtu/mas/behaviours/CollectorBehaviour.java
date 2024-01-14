@@ -136,50 +136,45 @@ public class CollectorBehaviour extends TickerBehaviour {
         return null;
     }
 
-    private String moveToNextNodeRandomly(List<Couple<Location, List<Couple<Observation, Integer>>>> lobs) {
-        Random r = new Random();
-        int moveId = 1 + r.nextInt(lobs.size() - 1);
+    private String selectRandomNode(List<Couple<Location, List<Couple<Observation, Integer>>>> locationObservations) {
+        Random random = new Random();
+        // Choose a random index, ensuring it's within the list's size range
+        int randomIndex = random.nextInt(locationObservations.size());
 
-        // Retrieve the location and string representation of the randomly selected node
-        Location next_node = lobs.get(moveId).getLeft();
-        Location goal_node = next_node;
-        String s_next_node = lobs.get(moveId).getLeft().toString();
-        String s_goal_node = s_next_node;
+        // Retrieve the selected location and its string representation
+        Location selectedLocation = locationObservations.get(randomIndex).getLeft();
+        String selectedLocationString = selectedLocation.toString();
 
-        // Check if the randomly chosen node is already in the node buffer
-        if (!this.node_Buffer.contains(s_next_node)) {
-            s_goal_node = s_next_node;
-            goal_node = next_node;
-        } else {
-            // If the node is in the buffer, find another node that is not in the buffer
-            for (int i = 1; i < lobs.size(); i++) {
-                s_next_node = lobs.get(i).getLeft().toString();
-                next_node = lobs.get(i).getLeft();
-                if (!this.node_Buffer.contains(s_next_node)) {
-                    s_goal_node = s_next_node;
-                    goal_node = next_node;
+        // If the selected location is not in the node buffer, it becomes the target
+        Location targetLocation = selectedLocation;
+        String targetLocationString = selectedLocationString;
+
+        // If the selected location is already in the node buffer, find an alternative
+        if (this.node_Buffer.contains(selectedLocationString)) {
+            for (int i = 0; i < locationObservations.size(); i++) {
+                Location alternativeLocation = locationObservations.get(i).getLeft();
+                String alternativeLocationString = alternativeLocation.toString();
+
+                if (!this.node_Buffer.contains(alternativeLocationString)) {
+                    targetLocation = alternativeLocation;
+                    targetLocationString = alternativeLocationString;
                     break;
                 }
             }
         }
 
-        // Attempt to move to the goal node
-        boolean moved = ((AbstractDedaleAgent) this.myAgent).moveTo(goal_node);
-        int i = 1;
-        // If the move was not successful, try moving to the next available node
-        while (!moved && i < lobs.size()) {
-            goal_node = lobs.get(i).getLeft();
-            moved = ((AbstractDedaleAgent) this.myAgent).moveTo(goal_node);
-            i = i + 1;
+        // Try moving to the target location
+        boolean hasMoved = ((AbstractDedaleAgent) this.myAgent).moveTo(targetLocation);
+        int attempt = 1;
+        while (!hasMoved && attempt < locationObservations.size()) {
+            targetLocation = locationObservations.get(attempt).getLeft();
+            hasMoved = ((AbstractDedaleAgent) this.myAgent).moveTo(targetLocation);
+            attempt++;
             this.node_Buffer.clear();
         }
 
-        // Return null if the agent could not move; otherwise, return the string representation of the goal node
-        if (!moved) {
-            return null;
-
-        }
-        return s_goal_node;
+        // Return null if unable to move; otherwise, return the string representation of the target location
+        return hasMoved ? targetLocationString : null;
     }
 
     private void receiveMission() {
@@ -535,7 +530,7 @@ public class CollectorBehaviour extends TickerBehaviour {
                 } else if (this.is_working && !this.backing_up) {
                     next_node = moveToNextNode(lobs);
                 } else {
-                    next_node = moveToNextNodeRandomly(lobs);
+                    next_node = selectRandomNode(lobs);
                 }
             }
 
